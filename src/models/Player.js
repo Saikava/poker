@@ -1,3 +1,9 @@
+const { 
+  InvalidInputError, 
+  InsufficientChipsError, 
+  InvalidActionError 
+} = require('../errors/PokerErrors');
+
 /**
  * Represents a poker player with chip tracking and action methods
  */
@@ -24,14 +30,31 @@ class Player {
    * Places a bet of the specified amount
    * @param {number} amount - Amount to bet
    * @returns {boolean} True if bet was successful
+   * @throws {InvalidInputError} If amount is invalid
+   * @throws {InsufficientChipsError} If player doesn't have enough chips
    */
   bet(amount) {
+    if (typeof amount !== 'number' || !Number.isInteger(amount)) {
+      throw new InvalidInputError('Bet amount must be an integer', {
+        provided: amount,
+        type: typeof amount,
+        playerId: this.id
+      });
+    }
+
     if (amount <= 0) {
-      throw new Error('Bet amount must be positive');
+      throw new InvalidInputError('Bet amount must be positive', {
+        provided: amount,
+        playerId: this.id
+      });
     }
     
     if (amount > this.chips) {
-      throw new Error('Insufficient chips for bet');
+      throw new InsufficientChipsError('Insufficient chips for bet', {
+        required: amount,
+        available: this.chips,
+        playerId: this.id
+      });
     }
 
     this.chips -= amount;
@@ -48,10 +71,14 @@ class Player {
 
   /**
    * Folds the player's hand
+   * @throws {InvalidActionError} If player cannot fold in current status
    */
   fold() {
     if (this.status === 'folded' || this.status === 'eliminated') {
-      throw new Error('Player cannot fold in current status');
+      throw new InvalidActionError('Player cannot fold in current status', {
+        currentStatus: this.status,
+        playerId: this.id
+      });
     }
     
     this.status = 'folded';
@@ -61,10 +88,15 @@ class Player {
   /**
    * Checks (passes action without betting)
    * @returns {boolean} True if check was successful
+   * @throws {InvalidActionError} If player cannot check in current status
    */
   check() {
     if (this.status !== 'active') {
-      throw new Error('Player cannot check in current status');
+      throw new InvalidActionError('Player cannot check in current status', {
+        currentStatus: this.status,
+        playerId: this.id,
+        requiredStatus: 'active'
+      });
     }
     
     return true;
@@ -89,10 +121,37 @@ class Player {
    * @param {number} raiseAmount - Amount to raise by
    * @param {number} callAmount - Amount needed to call first
    * @returns {boolean} True if raise was successful
+   * @throws {InvalidInputError} If raise amount is invalid
    */
   raise(raiseAmount, callAmount = 0) {
+    if (typeof raiseAmount !== 'number' || !Number.isInteger(raiseAmount)) {
+      throw new InvalidInputError('Raise amount must be an integer', {
+        provided: raiseAmount,
+        type: typeof raiseAmount,
+        playerId: this.id
+      });
+    }
+
     if (raiseAmount <= 0) {
-      throw new Error('Raise amount must be positive');
+      throw new InvalidInputError('Raise amount must be positive', {
+        provided: raiseAmount,
+        playerId: this.id
+      });
+    }
+
+    if (typeof callAmount !== 'number' || !Number.isInteger(callAmount)) {
+      throw new InvalidInputError('Call amount must be an integer', {
+        provided: callAmount,
+        type: typeof callAmount,
+        playerId: this.id
+      });
+    }
+
+    if (callAmount < 0) {
+      throw new InvalidInputError('Call amount cannot be negative', {
+        provided: callAmount,
+        playerId: this.id
+      });
     }
 
     const totalAmount = callAmount + raiseAmount;

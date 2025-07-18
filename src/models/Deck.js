@@ -1,4 +1,5 @@
 const Card = require('./Card');
+const { DeckError } = require('../errors/PokerErrors');
 
 /**
  * Represents a deck of playing cards with shuffle, deal, and reset functionality
@@ -50,12 +51,15 @@ class Deck {
 
   /**
    * Deal a single card from the top of the deck
-   * @returns {Card|null} The dealt card, or null if deck is empty
-   * @throws {Error} If attempting to deal from an empty deck
+   * @returns {Card} The dealt card
+   * @throws {DeckError} If attempting to deal from an empty deck
    */
   deal() {
     if (this.cards.length === 0) {
-      throw new Error('Cannot deal from empty deck');
+      throw new DeckError('Cannot deal from empty deck', {
+        remainingCards: this.cards.length,
+        dealtCards: this.dealtCards.length
+      });
     }
 
     const card = this.cards.pop();
@@ -67,11 +71,27 @@ class Deck {
    * Deal multiple cards from the deck
    * @param {number} count - Number of cards to deal
    * @returns {Card[]} Array of dealt cards
-   * @throws {Error} If attempting to deal more cards than available
+   * @throws {DeckError} If attempting to deal more cards than available
    */
   dealCards(count) {
+    if (typeof count !== 'number' || !Number.isInteger(count)) {
+      throw new DeckError('Card count must be an integer', {
+        provided: count,
+        type: typeof count
+      });
+    }
+
+    if (count < 0) {
+      throw new DeckError('Card count cannot be negative', {
+        provided: count
+      });
+    }
+
     if (count > this.cards.length) {
-      throw new Error(`Cannot deal ${count} cards, only ${this.cards.length} remaining`);
+      throw new DeckError(`Cannot deal ${count} cards, only ${this.cards.length} remaining`, {
+        requested: count,
+        available: this.cards.length
+      });
     }
 
     const dealtCards = [];

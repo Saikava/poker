@@ -1,4 +1,9 @@
 const Player = require('../models/Player');
+const { 
+  PlayerNotFoundError, 
+  InvalidInputError, 
+  InvalidActionError 
+} = require('../errors/PokerErrors');
 
 /**
  * Manages multiple players in a poker game
@@ -19,8 +24,51 @@ class PlayerManager {
    * @returns {Player} The created player
    */
   addPlayer(id, name, chips) {
+    // Validate inputs
+    if (!id || typeof id !== 'string') {
+      throw new InvalidInputError('Player ID is required and must be a string', {
+        provided: id,
+        type: typeof id
+      });
+    }
+
+    if (id.trim().length === 0) {
+      throw new InvalidInputError('Player ID cannot be empty', {
+        provided: id
+      });
+    }
+
+    if (!name || typeof name !== 'string') {
+      throw new InvalidInputError('Player name is required and must be a string', {
+        provided: name,
+        type: typeof name
+      });
+    }
+
+    if (name.trim().length === 0) {
+      throw new InvalidInputError('Player name cannot be empty', {
+        provided: name
+      });
+    }
+
+    if (typeof chips !== 'number' || !Number.isInteger(chips)) {
+      throw new InvalidInputError('Player chips must be an integer', {
+        provided: chips,
+        type: typeof chips
+      });
+    }
+
+    if (chips < 0) {
+      throw new InvalidInputError('Player chips cannot be negative', {
+        provided: chips
+      });
+    }
+
     if (this.players.has(id)) {
-      throw new Error(`Player with id ${id} already exists`);
+      throw new InvalidInputError(`Player with id ${id} already exists`, {
+        playerId: id,
+        existingPlayerCount: this.players.size
+      });
     }
 
     const position = this.playerOrder.length;
@@ -129,9 +177,19 @@ class PlayerManager {
    * @returns {boolean} True if action is valid
    */
   validatePlayerAction(playerId, action, callAmount = 0, minRaise = 0) {
+    if (!playerId || typeof playerId !== 'string') {
+      throw new InvalidInputError('Player ID is required and must be a string', {
+        provided: playerId,
+        type: typeof playerId
+      });
+    }
+
     const player = this.getPlayer(playerId);
     if (!player) {
-      throw new Error(`Player ${playerId} not found`);
+      throw new PlayerNotFoundError(`Player ${playerId} not found`, {
+        playerId: playerId,
+        availablePlayers: this.playerOrder
+      });
     }
 
     return player.canPerformAction(action, callAmount, minRaise);
@@ -146,9 +204,35 @@ class PlayerManager {
    * @returns {Object} Action result
    */
   executePlayerAction(playerId, action, amount = 0, callAmount = 0) {
+    if (!playerId || typeof playerId !== 'string') {
+      throw new InvalidInputError('Player ID is required and must be a string', {
+        provided: playerId,
+        type: typeof playerId
+      });
+    }
+
+    if (!action || typeof action !== 'string') {
+      throw new InvalidInputError('Action is required and must be a string', {
+        provided: action,
+        type: typeof action
+      });
+    }
+
+    const validActions = ['fold', 'check', 'call', 'raise'];
+    if (!validActions.includes(action)) {
+      throw new InvalidActionError(`Invalid action: ${action}`, {
+        provided: action,
+        validActions: validActions,
+        playerId: playerId
+      });
+    }
+
     const player = this.getPlayer(playerId);
     if (!player) {
-      throw new Error(`Player ${playerId} not found`);
+      throw new PlayerNotFoundError(`Player ${playerId} not found`, {
+        playerId: playerId,
+        availablePlayers: this.playerOrder
+      });
     }
 
     try {
@@ -168,9 +252,6 @@ class PlayerManager {
         case 'raise':
           player.raise(amount, callAmount);
           break;
-        
-        default:
-          throw new Error(`Invalid action: ${action}`);
       }
 
       return {
@@ -202,6 +283,91 @@ class PlayerManager {
   }
 
   /**
+   * Rotates the dealer button to the next active player
+   * Handles position adjustments for eliminated players
+   */
+  rotateDealerButton() {
+    if (this.playerOrder.length === 0) {
+      return;
+    }
+
+    const activePlayers = this.getActivePlayers();
+    if (activePlayers.length === 0) {
+      return;
+    }
+
+    // Find the next active player after current dealer
+    let nextDealerFound = false;
+    let attempts = 0;
+    const maxAttempts = this.playerOrder.length;
+
+    while (!nextDealerFound && attempts < maxAttempts) {
+      this.dealerPosition = (this.dealerPosition + 1) % this.playerOrder.length;
+      const potentialDealerId = this.playerOrder[this.dealerPosition];
+      const potentialDealer = this.getPlayer(potentialDealerId);
+      
+      if (potentialDealer && (potentialDealer.status === 'active' || potentialDealer.status === 'all-in')) {
+        nextDealerFound = true;
+      }
+      
+      attempts++;
+    }
+
+    // If no active player found, adjust to first active player
+    if (!nextDealerFound && activePlayers.length > 0) {
+      const firstActivePlayer = activePlayers[0];
+      this.dealerPosition = this.playerOrder.indexOf(firstActivePlayer.id);
+    }
+  }
+
+  /**
+   * Adjusts dealer position when players are eliminated
+   * Ensures dealer position points to an active player
+   */
+  adjustDealerPositionForEliminatedPlayers() {
+    if (this.playerOrder.length === 0) {
+      this.dealerPosition = 0;
+      return;
+    }
+
+    const activePlayers = this.getActivePlayers();
+    if (activePlayers.length === 0) {
+      this.dealerPosition = 0;
+      return;
+    }
+
+    // Check if current dealer position is valid
+    const currentDealerId = this.playerOrder[this.dealerPosition];
+    const currentDealer = this.getPlayer(currentDealerId);
+    
+    if (!currentDealer || (currentDealer.status !== 'active' && currentDealer.status !== 'all-in')) {
+      // Find the next active player from current position
+      let foundActiveDealer = false;
+      let attempts = 0;
+      const maxAttempts = this.playerOrder.length;
+
+      while (!foundActiveDealer && attempts < maxAttempts) {
+        const potentialDealerId = this.playerOrder[this.dealerPosition];
+        const potentialDealer = this.getPlayer(potentialDealerId);
+        
+        if (potentialDealer && (potentialDealer.status === 'active' || potentialDealer.status === 'all-in')) {
+          foundActiveDealer = true;
+        } else {
+          this.dealerPosition = (this.dealerPosition + 1) % this.playerOrder.length;
+        }
+        
+        attempts++;
+      }
+
+      // Fallback to first active player if no valid position found
+      if (!foundActiveDealer) {
+        const firstActivePlayer = activePlayers[0];
+        this.dealerPosition = this.playerOrder.indexOf(firstActivePlayer.id);
+      }
+    }
+  }
+
+  /**
    * Gets the dealer player
    * @returns {Player|null} Dealer player or null
    */
@@ -216,42 +382,89 @@ class PlayerManager {
 
   /**
    * Gets the small blind player
+   * Handles heads-up play and position adjustments for eliminated players
    * @returns {Player|null} Small blind player or null
    */
   getSmallBlindPlayer() {
-    if (this.playerOrder.length < 2) {
+    const activePlayers = this.getActivePlayers();
+    
+    if (activePlayers.length < 2) {
       return null;
     }
 
     // In heads-up, dealer posts small blind
-    if (this.playerOrder.length === 2) {
+    if (activePlayers.length === 2) {
       return this.getDealerPlayer();
     }
 
-    const sbPosition = (this.dealerPosition + 1) % this.playerOrder.length;
-    const sbId = this.playerOrder[sbPosition];
-    return this.getPlayer(sbId);
+    // Multi-way: small blind is left of dealer
+    const dealerPlayer = this.getDealerPlayer();
+    if (!dealerPlayer) {
+      return null;
+    }
+
+    return this.getNextActivePlayer(dealerPlayer.id);
   }
 
   /**
    * Gets the big blind player
+   * Handles heads-up play and position adjustments for eliminated players
    * @returns {Player|null} Big blind player or null
    */
   getBigBlindPlayer() {
-    if (this.playerOrder.length < 2) {
+    const activePlayers = this.getActivePlayers();
+    
+    if (activePlayers.length < 2) {
       return null;
     }
 
     // In heads-up, non-dealer posts big blind
-    if (this.playerOrder.length === 2) {
-      const bbPosition = (this.dealerPosition + 1) % this.playerOrder.length;
-      const bbId = this.playerOrder[bbPosition];
-      return this.getPlayer(bbId);
+    if (activePlayers.length === 2) {
+      const dealerPlayer = this.getDealerPlayer();
+      if (!dealerPlayer) {
+        return null;
+      }
+      return this.getNextActivePlayer(dealerPlayer.id);
     }
 
-    const bbPosition = (this.dealerPosition + 2) % this.playerOrder.length;
-    const bbId = this.playerOrder[bbPosition];
-    return this.getPlayer(bbId);
+    // Multi-way: big blind is two positions left of dealer
+    const sbPlayer = this.getSmallBlindPlayer();
+    if (!sbPlayer) {
+      return null;
+    }
+
+    return this.getNextActivePlayer(sbPlayer.id);
+  }
+
+  /**
+   * Gets the next active player after the specified player
+   * Skips eliminated and folded players
+   * @param {string} playerId - Current player ID
+   * @returns {Player|null} Next active player or null
+   */
+  getNextActivePlayer(playerId) {
+    const currentIndex = this.playerOrder.indexOf(playerId);
+    if (currentIndex === -1) {
+      return null;
+    }
+
+    const activePlayers = this.getActivePlayers();
+    if (activePlayers.length <= 1) {
+      return null;
+    }
+
+    // Find next active player
+    for (let i = 1; i < this.playerOrder.length; i++) {
+      const nextIndex = (currentIndex + i) % this.playerOrder.length;
+      const nextPlayerId = this.playerOrder[nextIndex];
+      const nextPlayer = this.getPlayer(nextPlayerId);
+      
+      if (nextPlayer && (nextPlayer.status === 'active' || nextPlayer.status === 'all-in')) {
+        return nextPlayer;
+      }
+    }
+
+    return null;
   }
 
   /**

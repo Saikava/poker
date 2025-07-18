@@ -1,3 +1,9 @@
+const { 
+  BettingError, 
+  InvalidActionError, 
+  InvalidInputError 
+} = require('../errors/PokerErrors');
+
 /**
  * Manages betting rounds and turn order in a poker game
  */
@@ -38,8 +44,41 @@ class BettingManager {
    * @returns {Object} Action result with betting state
    */
   processAction(playerId, action, amount = 0, playerCurrentBet = 0) {
+    // Validate inputs
+    if (!playerId || typeof playerId !== 'string') {
+      throw new InvalidInputError('Player ID is required and must be a string', {
+        provided: playerId,
+        type: typeof playerId
+      });
+    }
+
+    if (!action || typeof action !== 'string') {
+      throw new InvalidInputError('Action is required and must be a string', {
+        provided: action,
+        type: typeof action
+      });
+    }
+
+    if (typeof amount !== 'number' || !Number.isInteger(amount)) {
+      throw new InvalidInputError('Amount must be an integer', {
+        provided: amount,
+        type: typeof amount
+      });
+    }
+
+    if (typeof playerCurrentBet !== 'number' || !Number.isInteger(playerCurrentBet)) {
+      throw new InvalidInputError('Player current bet must be an integer', {
+        provided: playerCurrentBet,
+        type: typeof playerCurrentBet
+      });
+    }
+
     if (this.bettingComplete) {
-      throw new Error('Betting round is already complete');
+      throw new BettingError('Betting round is already complete', {
+        playerId: playerId,
+        action: action,
+        bettingRound: this.bettingRound
+      });
     }
 
     const result = {
@@ -59,14 +98,23 @@ class BettingManager {
 
       case 'check':
         if (this.currentBet > playerCurrentBet) {
-          throw new Error('Cannot check when there is a bet to call');
+          throw new InvalidActionError('Cannot check when there is a bet to call', {
+            playerId: playerId,
+            currentBet: this.currentBet,
+            playerCurrentBet: playerCurrentBet,
+            callAmount: this.currentBet - playerCurrentBet
+          });
         }
         break;
 
       case 'call':
         const callAmount = this.currentBet - playerCurrentBet;
         if (callAmount <= 0) {
-          throw new Error('No amount to call');
+          throw new InvalidActionError('No amount to call', {
+            playerId: playerId,
+            currentBet: this.currentBet,
+            playerCurrentBet: playerCurrentBet
+          });
         }
         result.amount = callAmount;
         break;
@@ -76,7 +124,12 @@ class BettingManager {
         const totalRaise = callAmount2 + amount;
         
         if (amount < this.minRaise) {
-          throw new Error(`Raise amount must be at least ${this.minRaise}`);
+          throw new InvalidActionError(`Raise amount must be at least ${this.minRaise}`, {
+            playerId: playerId,
+            provided: amount,
+            minimum: this.minRaise,
+            callAmount: callAmount2
+          });
         }
 
         this.currentBet = playerCurrentBet + totalRaise;
@@ -93,7 +146,11 @@ class BettingManager {
         break;
 
       default:
-        throw new Error(`Invalid action: ${action}`);
+        throw new InvalidActionError(`Invalid action: ${action}`, {
+          playerId: playerId,
+          provided: action,
+          validActions: ['fold', 'check', 'call', 'raise']
+        });
     }
 
     this.playersActed.add(playerId);

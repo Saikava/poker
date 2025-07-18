@@ -1,4 +1,5 @@
 const Card = require('../models/Card');
+const { HandEvaluationError, InvalidInputError } = require('../errors/PokerErrors');
 
 /**
  * Hand types in order of strength (lowest to highest)
@@ -36,44 +37,81 @@ class HandEvaluator {
    * Evaluates the best 5-card poker hand from given cards
    * @param {Card[]} cards - Array of cards (can be more than 5)
    * @returns {HandResult} The evaluation result
+   * @throws {InvalidInputError} If cards parameter is invalid
+   * @throws {HandEvaluationError} If hand evaluation fails
    */
   static evaluateHand(cards) {
-    if (!cards || cards.length < 5) {
-      throw new Error('At least 5 cards required for hand evaluation');
+    if (!cards) {
+      throw new InvalidInputError('Cards parameter is required', {
+        provided: cards
+      });
     }
 
-    // Sort cards by value (descending)
-    const sortedCards = [...cards].sort((a, b) => b.value - a.value);
-    
-    // Check for each hand type from highest to lowest
-    let result = this._checkRoyalFlush(sortedCards);
-    if (result) return result;
+    if (!Array.isArray(cards)) {
+      throw new InvalidInputError('Cards must be an array', {
+        provided: cards,
+        type: typeof cards
+      });
+    }
 
-    result = this._checkStraightFlush(sortedCards);
-    if (result) return result;
+    if (cards.length < 5) {
+      throw new InvalidInputError('At least 5 cards required for hand evaluation', {
+        provided: cards.length,
+        minimum: 5
+      });
+    }
 
-    result = this._checkFourOfAKind(sortedCards);
-    if (result) return result;
+    // Validate that all items are Card objects
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards[i];
+      if (!card || typeof card !== 'object' || !card.suit || !card.rank || !card.value) {
+        throw new InvalidInputError(`Invalid card at index ${i}`, {
+          cardIndex: i,
+          card: card,
+          expectedProperties: ['suit', 'rank', 'value']
+        });
+      }
+    }
 
-    result = this._checkFullHouse(sortedCards);
-    if (result) return result;
+    try {
+      // Sort cards by value (descending)
+      const sortedCards = [...cards].sort((a, b) => b.value - a.value);
+      
+      // Check for each hand type from highest to lowest
+      let result = this._checkRoyalFlush(sortedCards);
+      if (result) return result;
 
-    result = this._checkFlush(sortedCards);
-    if (result) return result;
+      result = this._checkStraightFlush(sortedCards);
+      if (result) return result;
 
-    result = this._checkStraight(sortedCards);
-    if (result) return result;
+      result = this._checkFourOfAKind(sortedCards);
+      if (result) return result;
 
-    result = this._checkThreeOfAKind(sortedCards);
-    if (result) return result;
+      result = this._checkFullHouse(sortedCards);
+      if (result) return result;
 
-    result = this._checkTwoPair(sortedCards);
-    if (result) return result;
+      result = this._checkFlush(sortedCards);
+      if (result) return result;
 
-    result = this._checkPair(sortedCards);
-    if (result) return result;
+      result = this._checkStraight(sortedCards);
+      if (result) return result;
 
-    return this._checkHighCard(sortedCards);
+      result = this._checkThreeOfAKind(sortedCards);
+      if (result) return result;
+
+      result = this._checkTwoPair(sortedCards);
+      if (result) return result;
+
+      result = this._checkPair(sortedCards);
+      if (result) return result;
+
+      return this._checkHighCard(sortedCards);
+    } catch (error) {
+      throw new HandEvaluationError('Failed to evaluate hand', {
+        originalError: error.message,
+        cardsCount: cards.length
+      });
+    }
   }
 
   /**

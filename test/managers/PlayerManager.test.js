@@ -229,10 +229,8 @@ describe('PlayerManager', () => {
     });
 
     test('should return error for invalid action', () => {
-      const result = playerManager.executePlayerAction('player1', 'invalid');
-      
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Invalid action: invalid');
+      expect(() => playerManager.executePlayerAction('player1', 'invalid'))
+        .toThrow('Invalid action: invalid');
     });
 
     test('should allow all-in when call amount exceeds chips', () => {

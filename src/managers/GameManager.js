@@ -3,6 +3,13 @@ const BettingManager = require('./BettingManager');
 const PotManager = require('./PotManager');
 const Deck = require('../models/Deck');
 const { HandEvaluator } = require('../utilities/HandEvaluator');
+const ValidationUtils = require('../utilities/ValidationUtils');
+const { 
+  GameStateError, 
+  InvalidInputError, 
+  PlayerNotFoundError,
+  ConfigurationError
+} = require('../errors/PokerErrors');
 
 /**
  * Central coordinator for poker game state management
@@ -10,6 +17,13 @@ const { HandEvaluator } = require('../utilities/HandEvaluator');
  */
 class GameManager {
   constructor(config = {}) {
+    // Validate configuration
+    try {
+      ValidationUtils.validateGameConfig(config);
+    } catch (error) {
+      throw error;
+    }
+
     // Game configuration
     this.smallBlind = config.smallBlind || 10;
     this.bigBlind = config.bigBlind || 20;
@@ -62,11 +76,18 @@ class GameManager {
   addPlayer(id, name, chips) {
     try {
       if (this.isGameActive) {
-        throw new Error('Cannot add players while game is active');
+        throw new GameStateError('Cannot add players while game is active', {
+          gameActive: this.isGameActive,
+          playerId: id
+        });
       }
 
       if (this.playerManager.getPlayerCount() >= this.maxPlayers) {
-        throw new Error(`Maximum ${this.maxPlayers} players allowed`);
+        throw new GameStateError(`Maximum ${this.maxPlayers} players allowed`, {
+          currentPlayerCount: this.playerManager.getPlayerCount(),
+          maxPlayers: this.maxPlayers,
+          playerId: id
+        });
       }
 
       const player = this.playerManager.addPlayer(id, name, chips);
@@ -84,6 +105,11 @@ class GameManager {
         canStartGame: this.canStartGame()
       };
     } catch (error) {
+      // If it's already a custom poker engine error, re-throw it
+      if (error.name && error.name.endsWith('Error') && error.toResponse) {
+        throw error;
+      }
+      
       return {
         success: false,
         error: error.message
@@ -188,9 +214,12 @@ class GameManager {
       // Prepare deck
       this.deck.reset().shuffle();
 
-      // Rotate dealer position
+      // Rotate dealer position (with proper handling for eliminated players)
       if (this.handNumber > 1) {
-        this.playerManager.rotateDealerPosition();
+        this.rotateDealerButton();
+      } else {
+        // For first hand, ensure dealer position is valid
+        this.playerManager.adjustDealerPositionForEliminatedPlayers();
       }
 
       // Collect blinds
@@ -554,16 +583,32 @@ class GameManager {
 
   /**
    * Collects blinds from appropriate players
+   * Handles heads-up play and special blind posting rules
    * @returns {Object} Result of collecting blinds
    * @private
    */
   collectBlinds() {
     try {
+      const activePlayers = this.playerManager.getActivePlayers();
+      
+      if (activePlayers.length < 2) {
+        throw new Error('Need at least 2 players to collect blinds');
+      }
+
       const sbPlayer = this.playerManager.getSmallBlindPlayer();
       const bbPlayer = this.playerManager.getBigBlindPlayer();
 
       if (!sbPlayer || !bbPlayer) {
         throw new Error('Cannot determine blind positions');
+      }
+
+      // Validate that blind players are active
+      if (sbPlayer.status !== 'active' && sbPlayer.status !== 'all-in') {
+        throw new Error('Small blind player is not active');
+      }
+      
+      if (bbPlayer.status !== 'active' && bbPlayer.status !== 'all-in') {
+        throw new Error('Big blind player is not active');
       }
 
       // Post small blind
@@ -576,12 +621,21 @@ class GameManager {
       bbPlayer.bet(bbAmount);
       this.potManager.addBet(bbPlayer.id, bbAmount);
 
+      // Set betting manager's current bet to big blind amount
+      this.bettingManager.currentBet = bbAmount;
+
       this.emit('blindsPosted', {
         smallBlind: { playerId: sbPlayer.id, amount: sbAmount },
-        bigBlind: { playerId: bbPlayer.id, amount: bbAmount }
+        bigBlind: { playerId: bbPlayer.id, amount: bbAmount },
+        isHeadsUp: activePlayers.length === 2,
+        dealerPosition: this.playerManager.dealerPosition
       });
 
-      return { success: true };
+      return { 
+        success: true,
+        smallBlind: { playerId: sbPlayer.id, amount: sbAmount },
+        bigBlind: { playerId: bbPlayer.id, amount: bbAmount }
+      };
     } catch (error) {
       return {
         success: false,
@@ -665,6 +719,20 @@ class GameManager {
     const activePlayers = this.playerManager.getActivePlayers();
     const nextPlayer = this.bettingManager.getNextPlayerToAct(activePlayers, this.currentPlayerId);
     this.currentPlayerId = nextPlayer ? nextPlayer.id : null;
+  }
+
+  /**
+   * Rotates the dealer button to the next active player
+   * Handles position adjustments for eliminated players
+   * @private
+   */
+  rotateDealerButton() {
+    this.playerManager.rotateDealerButton();
+    
+    this.emit('dealerButtonRotated', {
+      newDealerPosition: this.playerManager.dealerPosition,
+      dealerPlayerId: this.playerManager.getDealerPlayer()?.id
+    });
   }
 
   /**

@@ -70,9 +70,8 @@ describe('GameManager', () => {
         gameManager.addPlayer(`player${i}`, `Player${i}`, 1000);
       }
 
-      const result = gameManager.addPlayer('player7', 'Player7', 1000);
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Maximum 6 players allowed');
+      expect(() => gameManager.addPlayer('player7', 'Player7', 1000))
+        .toThrow('Maximum 6 players allowed');
     });
 
     test('should not allow adding players during active game', () => {
@@ -80,9 +79,8 @@ describe('GameManager', () => {
       gameManager.addPlayer('player2', 'Bob', 1000);
       gameManager.startGame();
 
-      const result = gameManager.addPlayer('player3', 'Charlie', 1000);
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Cannot add players while game is active');
+      expect(() => gameManager.addPlayer('player3', 'Charlie', 1000))
+        .toThrow('Cannot add players while game is active');
     });
 
     test('should remove players successfully', () => {
@@ -207,19 +205,7 @@ describe('GameManager', () => {
       expect(gameManager.communityCards).toHaveLength(5);
     });
 
-    test('should end hand when only one player remains', () => {
-      // Add a third player for this test
-      gameManager.addPlayer('player3', 'Charlie', 1000);
-      
-      // First player folds
-      gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
-      // Second player folds, leaving only one player
-      const result = gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
-      
-      expect(result.success).toBe(true);
-      expect(gameManager.gamePhase).toBe(GameManager.PHASES.FINISHED);
-      expect(gameManager.winners).toHaveLength(1);
-    });
+
   });
 
   describe('Player Actions', () => {
@@ -426,6 +412,324 @@ describe('GameManager', () => {
     });
   });
 
+  describe('Position and Blinds System', () => {
+    describe('Dealer Button Rotation', () => {
+      test('should rotate dealer button between hands', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.addPlayer('player3', 'Charlie', 1000);
+        gameManager.startGame();
+        
+        const initialDealer = gameManager.playerManager.dealerPosition;
+        const initialDealerId = gameManager.playerManager.getDealerPlayer().id;
+        
+        // Complete first hand
+        gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
+        gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
+        
+        // Start new hand
+        gameManager.startNewHand();
+        
+        const newDealer = gameManager.playerManager.dealerPosition;
+        const newDealerId = gameManager.playerManager.getDealerPlayer().id;
+        
+        expect(newDealer).not.toBe(initialDealer);
+        expect(newDealerId).not.toBe(initialDealerId);
+      });
+
+      test('should skip eliminated players when rotating dealer button', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 100);
+        gameManager.addPlayer('player3', 'Charlie', 1000);
+        gameManager.startGame();
+        
+        // Eliminate player2
+        const player2 = gameManager.playerManager.getPlayer('player2');
+        player2.chips = 0;
+        player2.eliminate();
+        
+        // Start new hand - should skip eliminated player
+        gameManager.startNewHand();
+        
+        const dealerPlayer = gameManager.playerManager.getDealerPlayer();
+        expect(dealerPlayer.id).not.toBe('player2');
+        expect(['player1', 'player3']).toContain(dealerPlayer.id);
+      });
+
+      test('should adjust dealer position when current dealer is eliminated', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 100);
+        gameManager.addPlayer('player3', 'Charlie', 1000);
+        gameManager.startGame();
+        
+        // Set dealer to player2
+        gameManager.playerManager.dealerPosition = 1;
+        
+        // Eliminate current dealer
+        const player2 = gameManager.playerManager.getPlayer('player2');
+        player2.chips = 0;
+        player2.eliminate();
+        
+        // Adjust dealer position
+        gameManager.playerManager.adjustDealerPositionForEliminatedPlayers();
+        
+        const dealerPlayer = gameManager.playerManager.getDealerPlayer();
+        expect(dealerPlayer.id).not.toBe('player2');
+        expect(['player1', 'player3']).toContain(dealerPlayer.id);
+      });
+    });
+
+    describe('Blind Collection', () => {
+      test('should collect blinds from correct positions in multi-way game', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.addPlayer('player3', 'Charlie', 1000);
+        gameManager.startGame();
+        
+        const sbPlayer = gameManager.playerManager.getSmallBlindPlayer();
+        const bbPlayer = gameManager.playerManager.getBigBlindPlayer();
+        const dealerPlayer = gameManager.playerManager.getDealerPlayer();
+        
+        expect(sbPlayer.currentBet).toBe(10);
+        expect(bbPlayer.currentBet).toBe(20);
+        expect(sbPlayer.id).not.toBe(dealerPlayer.id);
+        expect(bbPlayer.id).not.toBe(dealerPlayer.id);
+        expect(sbPlayer.id).not.toBe(bbPlayer.id);
+      });
+
+      test('should handle heads-up blind posting correctly', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.startGame();
+        
+        const dealerPlayer = gameManager.playerManager.getDealerPlayer();
+        const sbPlayer = gameManager.playerManager.getSmallBlindPlayer();
+        const bbPlayer = gameManager.playerManager.getBigBlindPlayer();
+        
+        // In heads-up, dealer posts small blind
+        expect(dealerPlayer.id).toBe(sbPlayer.id);
+        expect(dealerPlayer.id).not.toBe(bbPlayer.id);
+        expect(sbPlayer.currentBet).toBe(10);
+        expect(bbPlayer.currentBet).toBe(20);
+      });
+
+      test('should handle blind collection when players have insufficient chips', () => {
+        gameManager.addPlayer('player1', 'Alice', 5); // Less than small blind
+        gameManager.addPlayer('player2', 'Bob', 15); // Less than big blind
+        gameManager.startGame();
+        
+        const sbPlayer = gameManager.playerManager.getSmallBlindPlayer();
+        const bbPlayer = gameManager.playerManager.getBigBlindPlayer();
+        
+        // Should post what they can afford
+        expect(sbPlayer.currentBet).toBe(5); // All their chips
+        expect(bbPlayer.currentBet).toBe(15); // All their chips
+        expect(gameManager.potManager.getTotalPotAmount()).toBe(20);
+      });
+
+      test('should validate blind players are active', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.addPlayer('player3', 'Charlie', 1000);
+        gameManager.startGame();
+        
+        // Get small blind player before completing hand
+        const sbPlayer = gameManager.playerManager.getSmallBlindPlayer();
+        
+        // Complete first hand
+        gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
+        gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
+        
+        // Eliminate the small blind player
+        sbPlayer.chips = 0;
+        sbPlayer.eliminate();
+        
+        // Should still be able to start new hand with remaining players
+        const result = gameManager.startNewHand();
+        expect(result.success).toBe(true);
+        
+        const newSbPlayer = gameManager.playerManager.getSmallBlindPlayer();
+        expect(newSbPlayer).not.toBeNull();
+        expect(newSbPlayer.status).toBe('active');
+      });
+    });
+
+    describe('Position Management', () => {
+      test('should maintain correct position order after player elimination', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 100);
+        gameManager.addPlayer('player3', 'Charlie', 1000);
+        gameManager.addPlayer('player4', 'David', 1000);
+        
+        const initialOrder = [...gameManager.playerManager.playerOrder];
+        
+        // Remove middle player
+        gameManager.removePlayer('player2');
+        
+        const newOrder = gameManager.playerManager.playerOrder;
+        expect(newOrder).toEqual(['player1', 'player3', 'player4']);
+        expect(newOrder.length).toBe(3);
+        
+        // Check positions are updated
+        const player1 = gameManager.playerManager.getPlayer('player1');
+        const player3 = gameManager.playerManager.getPlayer('player3');
+        const player4 = gameManager.playerManager.getPlayer('player4');
+        
+        expect(player1.position).toBe(0);
+        expect(player3.position).toBe(1);
+        expect(player4.position).toBe(2);
+      });
+
+      test('should get next active player correctly', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.addPlayer('player3', 'Charlie', 1000);
+        gameManager.startGame();
+        
+        // Fold player2
+        const player2 = gameManager.playerManager.getPlayer('player2');
+        player2.fold();
+        
+        // Next active player after player1 should be player3 (skipping folded player2)
+        const nextPlayer = gameManager.playerManager.getNextActivePlayer('player1');
+        expect(nextPlayer.id).toBe('player3');
+      });
+
+      test('should handle position adjustments when dealer is removed', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.addPlayer('player3', 'Charlie', 1000);
+        
+        // Set dealer to player2
+        gameManager.playerManager.dealerPosition = 1;
+        const originalDealer = gameManager.playerManager.getDealerPlayer();
+        expect(originalDealer.id).toBe('player2');
+        
+        // Remove dealer
+        gameManager.removePlayer('player2');
+        
+        // Dealer position should be adjusted
+        const newDealer = gameManager.playerManager.getDealerPlayer();
+        expect(newDealer).not.toBeNull();
+        expect(['player1', 'player3']).toContain(newDealer.id);
+      });
+    });
+
+    describe('Heads-up Play Special Rules', () => {
+      test('should handle heads-up blind posting rules', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.startGame();
+        
+        const dealerPlayer = gameManager.playerManager.getDealerPlayer();
+        const sbPlayer = gameManager.playerManager.getSmallBlindPlayer();
+        const bbPlayer = gameManager.playerManager.getBigBlindPlayer();
+        
+        // In heads-up: dealer = small blind, non-dealer = big blind
+        expect(dealerPlayer.id).toBe(sbPlayer.id);
+        expect(dealerPlayer.id).not.toBe(bbPlayer.id);
+      });
+
+      test('should rotate dealer correctly in heads-up play', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.startGame();
+        
+        const initialDealer = gameManager.playerManager.getDealerPlayer().id;
+        
+        // Complete hand
+        gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
+        
+        // Start new hand
+        gameManager.startNewHand();
+        
+        const newDealer = gameManager.playerManager.getDealerPlayer().id;
+        expect(newDealer).not.toBe(initialDealer);
+      });
+
+      test('should transition from multi-way to heads-up correctly', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.addPlayer('player3', 'Charlie', 100);
+        gameManager.startGame();
+        
+        // Eliminate one player to create heads-up
+        const player3 = gameManager.playerManager.getPlayer('player3');
+        player3.chips = 0;
+        player3.eliminate();
+        
+        // Complete current hand
+        gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
+        
+        // Start new hand - should now be heads-up
+        gameManager.startNewHand();
+        
+        const activePlayers = gameManager.playerManager.getActivePlayers();
+        expect(activePlayers.length).toBe(2);
+        
+        // Check heads-up blind rules are applied
+        const dealerPlayer = gameManager.playerManager.getDealerPlayer();
+        const sbPlayer = gameManager.playerManager.getSmallBlindPlayer();
+        expect(dealerPlayer.id).toBe(sbPlayer.id);
+      });
+    });
+
+    describe('Blind Scenarios Edge Cases', () => {
+      test('should handle all-in blind posting', () => {
+        gameManager.addPlayer('player1', 'Alice', 5); // Can only post partial small blind
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.startGame();
+        
+        const sbPlayer = gameManager.playerManager.getSmallBlindPlayer();
+        expect(sbPlayer.currentBet).toBe(5);
+        expect(sbPlayer.chips).toBe(0);
+        expect(sbPlayer.status).toBe('all-in');
+      });
+
+      test('should emit dealer button rotation events', () => {
+        const events = [];
+        gameManager.on('dealerButtonRotated', (data) => events.push(data));
+        
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.startGame();
+        
+        // Complete hand to trigger rotation
+        gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
+        gameManager.startNewHand();
+        
+        expect(events.length).toBe(1);
+        expect(events[0]).toHaveProperty('newDealerPosition');
+        expect(events[0]).toHaveProperty('dealerPlayerId');
+      });
+
+      test('should emit enhanced blinds posted events', () => {
+        const events = [];
+        gameManager.on('blindsPosted', (data) => events.push(data));
+        
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        gameManager.addPlayer('player2', 'Bob', 1000);
+        gameManager.startGame();
+        
+        expect(events.length).toBe(1);
+        expect(events[0]).toHaveProperty('smallBlind');
+        expect(events[0]).toHaveProperty('bigBlind');
+        expect(events[0]).toHaveProperty('isHeadsUp');
+        expect(events[0]).toHaveProperty('dealerPosition');
+        expect(events[0].isHeadsUp).toBe(true);
+      });
+
+      test('should handle insufficient players for blinds', () => {
+        gameManager.addPlayer('player1', 'Alice', 1000);
+        // Try to start with only one player
+        
+        const result = gameManager.startGame();
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('Need at least 2 players to start');
+      });
+    });
+  });
+
   describe('Edge Cases', () => {
     test('should handle heads-up play correctly', () => {
       gameManager.addPlayer('player1', 'Alice', 1000);
@@ -467,6 +771,22 @@ describe('GameManager', () => {
       expect(result.success).toBe(true);
       const player = gameManager.playerManager.getPlayer(originalPlayer);
       expect(player.status).toBe('all-in');
+    });
+
+    test('should end hand when only one player remains', () => {
+      gameManager.addPlayer('player1', 'Alice', 1000);
+      gameManager.addPlayer('player2', 'Bob', 1000);
+      gameManager.addPlayer('player3', 'Charlie', 1000);
+      gameManager.startGame();
+      
+      // First player folds
+      gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
+      // Second player folds, leaving only one player
+      const result = gameManager.processPlayerAction(gameManager.currentPlayerId, 'fold');
+      
+      expect(result.success).toBe(true);
+      expect(gameManager.gamePhase).toBe(GameManager.PHASES.FINISHED);
+      expect(gameManager.winners).toHaveLength(1);
     });
   });
 });
