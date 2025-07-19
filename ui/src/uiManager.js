@@ -56,6 +56,14 @@ class UIManager {
     this.elements.handResultsSection = this.document.getElementById('hand-results');
     this.elements.handResultsContent = this.document.getElementById('results-content');
     
+    // Debug/Performance elements
+    this.elements.showPerformanceBtn = this.document.getElementById('show-performance-btn');
+    this.elements.optimizeEngineBtn = this.document.getElementById('optimize-engine-btn');
+    this.elements.showGameConfigBtn = this.document.getElementById('show-game-config-btn');
+    this.elements.debugInfo = this.document.getElementById('debug-info');
+    this.elements.debugContent = this.document.getElementById('debug-content');
+    this.elements.hideDebugBtn = this.document.getElementById('hide-debug-btn');
+    
     // Player action elements
     this.elements.currentPlayerInfo = this.document.getElementById('current-player-info');
     this.elements.actionButtons = this.document.getElementById('action-buttons');
@@ -126,6 +134,20 @@ class UIManager {
       this.elements.raiseAmount.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') this.handleConfirmRaise();
       });
+    }
+    
+    // Debug/Performance events
+    if (this.elements.showPerformanceBtn) {
+      this.elements.showPerformanceBtn.addEventListener('click', () => this.showPerformanceStats());
+    }
+    if (this.elements.optimizeEngineBtn) {
+      this.elements.optimizeEngineBtn.addEventListener('click', () => this.optimizeEngine());
+    }
+    if (this.elements.showGameConfigBtn) {
+      this.elements.showGameConfigBtn.addEventListener('click', () => this.showGameConfig());
+    }
+    if (this.elements.hideDebugBtn) {
+      this.elements.hideDebugBtn.addEventListener('click', () => this.hideDebugInfo());
     }
   }
 
@@ -895,6 +917,70 @@ class UIManager {
       // Hide hand results when hand is not complete
       this.elements.handResultsSection.style.display = 'none';
     }
+  }
+
+  /**
+   * Show performance statistics
+   */
+  showPerformanceStats() {
+    try {
+      const performanceStats = this.gameController.getPerformanceStats();
+      const formattedStats = JSON.stringify(performanceStats, null, 2);
+      this.showDebugInfo('Performance Statistics', formattedStats);
+    } catch (error) {
+      this.showError('Failed to get performance statistics: ' + error.message);
+    }
+  }
+
+  /**
+   * Optimize the poker engine
+   */
+  optimizeEngine() {
+    try {
+      this.gameController.optimize();
+      this.showDebugInfo('Engine Optimization', 'Engine optimization completed successfully.\n\nOptimizations performed:\n- Hand evaluation cache optimized\n- Memory manager optimized\n- Event listeners cleaned up');
+    } catch (error) {
+      this.showError('Failed to optimize engine: ' + error.message);
+    }
+  }
+
+  /**
+   * Show game configuration
+   */
+  showGameConfig() {
+    try {
+      const config = this.gameController.getConfig();
+      const gameStats = this.gameController.getGameStats();
+      const configInfo = {
+        gameConfiguration: config,
+        currentGameStats: gameStats
+      };
+      const formattedConfig = JSON.stringify(configInfo, null, 2);
+      this.showDebugInfo('Game Configuration & Stats', formattedConfig);
+    } catch (error) {
+      this.showError('Failed to get game configuration: ' + error.message);
+    }
+  }
+
+  /**
+   * Show debug information
+   */
+  showDebugInfo(title, content) {
+    this.elements.debugContent.textContent = `=== ${title} ===\n\n${content}`;
+    this.elements.debugInfo.style.display = 'block';
+    
+    // Scroll debug info into view
+    if (this.elements.debugInfo.scrollIntoView) {
+      this.elements.debugInfo.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  /**
+   * Hide debug information
+   */
+  hideDebugInfo() {
+    this.elements.debugInfo.style.display = 'none';
+    this.elements.debugContent.textContent = '';
   }
 
   /**

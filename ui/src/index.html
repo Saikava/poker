@@ -132,8 +132,24 @@
                     <!-- Hand results will be displayed here -->
                 </div>
             </section>
+
+            <!-- Debug/Performance Section -->
+            <section class="debug-section" id="debug-section">
+                <h2>Debug & Performance</h2>
+                <div class="debug-controls">
+                    <button type="button" id="show-performance-btn" class="btn btn-info">Show Performance Stats</button>
+                    <button type="button" id="optimize-engine-btn" class="btn btn-warning">Optimize Engine</button>
+                    <button type="button" id="show-game-config-btn" class="btn btn-secondary">Show Game Config</button>
+                </div>
+                <div class="debug-info" id="debug-info" style="display: none;">
+                    <h3>Debug Information</h3>
+                    <pre id="debug-content"></pre>
+                    <button type="button" id="hide-debug-btn" class="btn btn-secondary">Hide Debug Info</button>
+                </div>
+            </section>
         </main>
     </div>
 
+    <script src="main.js"></script>
 </body>
 </html>

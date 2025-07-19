@@ -451,7 +451,7 @@ describe('HTML Structure and CSS Classes', () => {
 
     test('sections have proper semantic structure', () => {
       const sections = document.querySelectorAll('section');
-      expect(sections.length).toBe(6); // player-management, game-controls, game-state, player-actions, error-display, hand-results
+      expect(sections.length).toBe(7); // player-management, game-controls, game-state, player-actions, error-display, hand-results, debug-section
       
       sections.forEach(section => {
         const heading = section.querySelector('h2');
