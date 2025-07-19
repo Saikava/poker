@@ -4,11 +4,137 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Poker Engine UI</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div id="app">
-        <h1>Poker Engine UI</h1>
-        <p>Loading...</p>
+        <header class="app-header">
+            <h1>Poker Engine UI</h1>
+        </header>
+
+        <main class="app-main">
+            <!-- Player Management Section -->
+            <section class="player-management" id="player-management">
+                <h2>Player Management</h2>
+                <div class="add-player-form">
+                    <div class="form-group">
+                        <label for="player-id">Player ID:</label>
+                        <input type="text" id="player-id" name="player-id" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="player-name">Player Name:</label>
+                        <input type="text" id="player-name" name="player-name" required>
+                    </div>
+                    <button type="button" id="add-player-btn" class="btn btn-primary">Add Player</button>
+                </div>
+                <div class="player-list" id="player-list">
+                    <h3>Players</h3>
+                    <div class="players-container" id="players-container">
+                        <!-- Players will be dynamically added here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Game Controls Section -->
+            <section class="game-controls" id="game-controls">
+                <h2>Game Controls</h2>
+                <div class="control-buttons">
+                    <button type="button" id="start-game-btn" class="btn btn-success" disabled>Start Game</button>
+                    <button type="button" id="new-hand-btn" class="btn btn-secondary" disabled>New Hand</button>
+                </div>
+                <div class="game-info" id="game-info">
+                    <div class="info-item">
+                        <span class="label">Game Phase:</span>
+                        <span class="value" id="game-phase">Not Started</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Hand Number:</span>
+                        <span class="value" id="hand-number">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Current Player:</span>
+                        <span class="value" id="current-player">None</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Game State Display Section -->
+            <section class="game-state" id="game-state">
+                <h2>Game State</h2>
+                
+                <!-- Community Cards -->
+                <div class="community-cards" id="community-cards">
+                    <h3>Community Cards</h3>
+                    <div class="cards-container" id="community-cards-container">
+                        <!-- Community cards will be displayed here -->
+                    </div>
+                </div>
+
+                <!-- Pot Information -->
+                <div class="pot-info" id="pot-info">
+                    <h3>Pot Information</h3>
+                    <div class="pot-details">
+                        <div class="info-item">
+                            <span class="label">Total Pot:</span>
+                            <span class="value" id="total-pot">$0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Side Pots:</span>
+                            <span class="value" id="side-pots">None</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Players State -->
+                <div class="players-state" id="players-state">
+                    <h3>Players</h3>
+                    <div class="players-grid" id="players-grid">
+                        <!-- Player states will be displayed here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Player Actions Section -->
+            <section class="player-actions" id="player-actions">
+                <h2>Player Actions</h2>
+                <div class="current-player-info" id="current-player-info">
+                    <p>Waiting for game to start...</p>
+                </div>
+                <div class="action-buttons" id="action-buttons">
+                    <button type="button" id="fold-btn" class="btn btn-danger action-btn" disabled>Fold</button>
+                    <button type="button" id="check-btn" class="btn btn-secondary action-btn" disabled>Check</button>
+                    <button type="button" id="call-btn" class="btn btn-primary action-btn" disabled>Call</button>
+                    <button type="button" id="raise-btn" class="btn btn-warning action-btn" disabled>Raise</button>
+                </div>
+                <div class="raise-controls" id="raise-controls" style="display: none;">
+                    <div class="form-group">
+                        <label for="raise-amount">Raise Amount:</label>
+                        <input type="number" id="raise-amount" name="raise-amount" min="0" step="1">
+                    </div>
+                    <button type="button" id="confirm-raise-btn" class="btn btn-warning">Confirm Raise</button>
+                    <button type="button" id="cancel-raise-btn" class="btn btn-secondary">Cancel</button>
+                </div>
+            </section>
+
+            <!-- Error Display Section -->
+            <section class="error-display" id="error-display" style="display: none;">
+                <h2>Error</h2>
+                <div class="error-message" id="error-message">
+                    <!-- Error messages will be displayed here -->
+                </div>
+                <button type="button" id="clear-error-btn" class="btn btn-secondary">Clear Error</button>
+            </section>
+
+            <!-- Hand Results Section -->
+            <section class="hand-results" id="hand-results" style="display: none;">
+                <h2>Hand Results</h2>
+                <div class="results-content" id="results-content">
+                    <!-- Hand results will be displayed here -->
+                </div>
+            </section>
+        </main>
     </div>
+
+    <script src="main.js"></script>
 </body>
 </html>

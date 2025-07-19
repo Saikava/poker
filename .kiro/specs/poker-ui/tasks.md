@@ -5,6 +5,7 @@
 
 
 
+
   - Create ui directory with src and test subdirectories
   - Configure package.json with necessary dependencies (webpack, jest, jsdom)
   - Set up webpack configuration to bundle poker engine for browser use
@@ -12,7 +13,11 @@
   - Create basic test setup and helpers
   - _Requirements: 6.2, 6.3_
 
-- [ ] 2. Create basic HTML structure and CSS styling
+
+- [x] 2. Create basic HTML structure and CSS styling
+
+
+
 
   - Write index.html with semantic structure for all UI components
   - Create styles.css with simple, functional styling for game elements
@@ -20,7 +25,8 @@
   - Write tests to verify HTML structure and CSS class application
   - _Requirements: 6.1, 6.4_
 
-- [ ] 3. Implement game controller with poker engine integration
+- [-] 3. Implement game controller with poker engine integration
+
 
   - Create gameController.js that instantiates poker engine in browser
   - Implement methods to wrap poker engine calls (addPlayer, startGame, playerAction)
