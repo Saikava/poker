@@ -52,6 +52,10 @@ class UIManager {
     this.elements.errorMessage = this.document.getElementById('error-message');
     this.elements.clearErrorBtn = this.document.getElementById('clear-error-btn');
     
+    // Hand results display elements
+    this.elements.handResultsSection = this.document.getElementById('hand-results');
+    this.elements.handResultsContent = this.document.getElementById('results-content');
+    
     // Player action elements
     this.elements.currentPlayerInfo = this.document.getElementById('current-player-info');
     this.elements.actionButtons = this.document.getElementById('action-buttons');
@@ -227,6 +231,27 @@ class UIManager {
   }
 
   /**
+   * Update player list from game state to keep chip counts current
+   */
+  updatePlayerListFromGameState(gameState) {
+    if (!gameState.players || gameState.players.length === 0) {
+      return;
+    }
+    
+    // Update current players with latest chip counts from game state
+    gameState.players.forEach(gamePlayer => {
+      const localPlayer = this.currentPlayers.find(p => p.id === gamePlayer.id);
+      if (localPlayer) {
+        localPlayer.chips = gamePlayer.chips || localPlayer.chips;
+        localPlayer.name = gamePlayer.name || localPlayer.name;
+      }
+    });
+    
+    // Refresh the player list display with updated chip counts
+    this.updatePlayerList();
+  }
+
+  /**
    * Clear the player form inputs
    */
   clearPlayerForm() {
@@ -255,8 +280,7 @@ class UIManager {
 
     if (result.success) {
       // Update UI to reflect game started
-      this.updateGameControls();
-      this.updateGameStateDisplay();
+      this.refreshUI();
     } else {
       // Display error from poker engine
       const errorMessage = result.error ? result.error.message : 'Failed to start game';
@@ -276,8 +300,7 @@ class UIManager {
 
     if (result.success) {
       // Update UI to reflect new hand started
-      this.updateGameControls();
-      this.updateGameStateDisplay();
+      this.refreshUI();
     } else {
       // Display error from poker engine
       const errorMessage = result.error ? result.error.message : 'Failed to start new hand';
@@ -360,7 +383,7 @@ class UIManager {
   }
 
   /**
-   * Update game state display
+   * Update game state display - comprehensive refresh of all UI elements
    */
   updateGameStateDisplay() {
     try {
@@ -384,10 +407,23 @@ class UIManager {
       
       // Update player actions
       this.updatePlayerActions(gameState);
+      
+      // Update hand results if hand is complete
+      this.updateHandResults(gameState, gameStats);
+      
+      // Update player list to reflect current chip counts
+      this.updatePlayerListFromGameState(gameState);
     } catch (error) {
       // Handle errors gracefully - in a real app, you might want to show an error message
       console.error('Error updating game state display:', error);
     }
+  }
+
+  /**
+   * Refresh all UI components - called after any poker engine interaction
+   */
+  refreshUI() {
+    this.updateGameStateDisplay();
   }
 
   /**
@@ -673,7 +709,7 @@ class UIManager {
     
     if (result.success) {
       // Update UI to reflect action taken
-      this.updateGameStateDisplay();
+      this.refreshUI();
     } else {
       // Display error from poker engine
       const errorMessage = result.error ? result.error.message : `Failed to perform ${action} action`;
@@ -750,7 +786,7 @@ class UIManager {
     if (result.success) {
       // Hide raise controls and update UI
       this.elements.raiseControls.style.display = 'none';
-      this.updateGameStateDisplay();
+      this.refreshUI();
     } else {
       // Display error from poker engine
       const errorMessage = result.error ? result.error.message : 'Failed to perform raise action';
@@ -765,6 +801,87 @@ class UIManager {
     // Hide raise controls without performing action
     this.elements.raiseControls.style.display = 'none';
     this.elements.raiseAmount.value = '';
+  }
+
+  /**
+   * Update hand results display when hand is complete
+   */
+  updateHandResults(gameState, gameStats) {
+    if (!this.elements.handResultsSection || !this.elements.handResultsContent) {
+      return;
+    }
+    
+    // Show hand results only when hand is complete
+    if (gameStats.currentPhase === 'complete' && gameState.handResults) {
+      this.elements.handResultsSection.style.display = 'block';
+      
+      const results = gameState.handResults;
+      let resultsHtml = '<div class="hand-results-summary">';
+      
+      // Display winners
+      if (results.winners && results.winners.length > 0) {
+        resultsHtml += '<h3>Hand Winners</h3>';
+        results.winners.forEach((winner, index) => {
+          const player = gameState.players ? gameState.players.find(p => p.id === winner.playerId) : null;
+          const playerName = player ? player.name : winner.playerId;
+          
+          resultsHtml += `
+            <div class="winner-info">
+              <div class="winner-player">
+                <strong>${this.escapeHtml(playerName)} (${this.escapeHtml(winner.playerId)})</strong>
+              </div>
+              <div class="winner-hand">
+                Hand: ${this.escapeHtml(winner.handType || 'Unknown')}
+              </div>
+              <div class="winner-amount">
+                Won: $${winner.amount || 0}
+              </div>
+            </div>
+          `;
+        });
+      }
+      
+      // Display pot distribution
+      if (results.potDistribution) {
+        resultsHtml += '<h3>Pot Distribution</h3>';
+        resultsHtml += `<div class="pot-distribution">Total Pot: $${results.potDistribution.totalPot || 0}</div>`;
+        
+        if (results.potDistribution.mainPot) {
+          resultsHtml += `<div class="main-pot">Main Pot: $${results.potDistribution.mainPot}</div>`;
+        }
+        
+        if (results.potDistribution.sidePots && results.potDistribution.sidePots.length > 0) {
+          results.potDistribution.sidePots.forEach((sidePot, index) => {
+            resultsHtml += `<div class="side-pot">Side Pot ${index + 1}: $${sidePot.amount}</div>`;
+          });
+        }
+      }
+      
+      // Display all player hands if available
+      if (results.playerHands && results.playerHands.length > 0) {
+        resultsHtml += '<h3>Player Hands</h3>';
+        results.playerHands.forEach(playerHand => {
+          const player = gameState.players ? gameState.players.find(p => p.id === playerHand.playerId) : null;
+          const playerName = player ? player.name : playerHand.playerId;
+          
+          resultsHtml += `
+            <div class="player-hand-result">
+              <div class="player-name">${this.escapeHtml(playerName)} (${this.escapeHtml(playerHand.playerId)})</div>
+              <div class="hand-type">${this.escapeHtml(playerHand.handType || 'Folded')}</div>
+              <div class="hand-cards">
+                ${playerHand.cards ? playerHand.cards.map(card => this.createCardElement(card, true)).join('') : 'No cards shown'}
+              </div>
+            </div>
+          `;
+        });
+      }
+      
+      resultsHtml += '</div>';
+      this.elements.handResultsContent.innerHTML = resultsHtml;
+    } else {
+      // Hide hand results when hand is not complete
+      this.elements.handResultsSection.style.display = 'none';
+    }
   }
 
   /**

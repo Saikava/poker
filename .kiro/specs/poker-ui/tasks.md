@@ -76,8 +76,7 @@
   - Write tests for game control interactions and state updates
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 7. Create player action interface
-
+- [x] 7. Create player action interface
 
 
   - Build action buttons (fold, check, call, raise) that show/hide based on available actions
@@ -89,7 +88,7 @@
 
 
 
-- [ ] 8. Implement comprehensive game state updates
+- [x] 8. Implement comprehensive game state updates
 
   - Create UI update methods that refresh display after each poker engine call
   - Implement real-time display of player chips, bets, and card information
