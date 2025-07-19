@@ -170,10 +170,13 @@ describe('HandEvaluator Error Handling', () => {
     });
 
     test('should handle HandEvaluationError for internal evaluation failures', () => {
+      // Clear cache first to ensure we don't hit cached results
+      HandEvaluator.clearCache();
+      
       // Create a scenario that might cause internal evaluation to fail
-      // by mocking a method to throw an error
-      const originalCheckRoyalFlush = HandEvaluator._checkRoyalFlush;
-      HandEvaluator._checkRoyalFlush = () => {
+      // by mocking the cache to throw an error
+      const originalCacheSet = HandEvaluator.cache.set;
+      HandEvaluator.cache.set = () => {
         throw new Error('Internal evaluation error');
       };
 
@@ -190,14 +193,17 @@ describe('HandEvaluator Error Handling', () => {
         expect(() => HandEvaluator.evaluateHand(cards)).toThrow('Failed to evaluate hand');
       } finally {
         // Restore original method
-        HandEvaluator._checkRoyalFlush = originalCheckRoyalFlush;
+        HandEvaluator.cache.set = originalCacheSet;
       }
     });
 
     test('should include proper error details for HandEvaluationError', () => {
-      // Mock internal method to throw error
-      const originalCheckRoyalFlush = HandEvaluator._checkRoyalFlush;
-      HandEvaluator._checkRoyalFlush = () => {
+      // Clear cache first to ensure we don't hit cached results
+      HandEvaluator.clearCache();
+      
+      // Mock cache to throw error
+      const originalCacheSet = HandEvaluator.cache.set;
+      HandEvaluator.cache.set = () => {
         throw new Error('Internal evaluation error');
       };
 
@@ -220,7 +226,7 @@ describe('HandEvaluator Error Handling', () => {
         });
       } finally {
         // Restore original method
-        HandEvaluator._checkRoyalFlush = originalCheckRoyalFlush;
+        HandEvaluator.cache.set = originalCacheSet;
       }
     });
   });

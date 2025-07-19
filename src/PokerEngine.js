@@ -1,5 +1,6 @@
 const GameManager = require('./managers/GameManager');
 const ValidationUtils = require('./utilities/ValidationUtils');
+const { memoryManager } = require('./utilities/MemoryManager');
 const { 
   InvalidInputError, 
   PlayerNotFoundError, 
@@ -50,6 +51,11 @@ class PokerEngine {
     // Event system
     this.eventListeners = new Map();
     this.setupEventForwarding();
+
+    // Register cleanup callback for memory management
+    memoryManager.registerCleanupCallback(() => {
+      this.performCleanup();
+    });
   }
 
   /**
@@ -615,6 +621,112 @@ class PokerEngine {
       return 'GameStateError';
     }
     return 'InvalidActionError';
+  }
+
+  /**
+   * Performance and cleanup methods
+   */
+
+  /**
+   * Gets comprehensive performance statistics
+   * @returns {Object} Performance statistics
+   */
+  getPerformanceStats() {
+    const { HandEvaluator } = require('./utilities/HandEvaluator');
+    
+    return {
+      handEvaluationCache: HandEvaluator.getCacheStats(),
+      memoryManager: memoryManager.getMemoryStats(),
+      gameStats: this.getGameStats(),
+      eventListeners: {
+        totalListeners: Array.from(this.eventListeners.values())
+          .reduce((total, listeners) => total + listeners.length, 0),
+        eventTypes: this.eventListeners.size
+      }
+    };
+  }
+
+  /**
+   * Optimizes engine performance
+   * @param {Object} options - Optimization options
+   */
+  optimize(options = {}) {
+    const { HandEvaluator } = require('./utilities/HandEvaluator');
+    
+    // Optimize hand evaluation cache
+    if (options.optimizeCache !== false) {
+      HandEvaluator.optimizeCache(options.cacheTargetSize);
+    }
+
+    // Optimize memory manager
+    if (options.optimizeMemory !== false) {
+      memoryManager.optimize();
+    }
+
+    // Clean up event listeners if requested
+    if (options.cleanupEvents) {
+      this.cleanupEventListeners();
+    }
+  }
+
+  /**
+   * Performs cleanup operations
+   * @private
+   */
+  performCleanup() {
+    // Clear any temporary data structures
+    if (this.gameManager) {
+      // Let GameManager handle its own cleanup
+      if (typeof this.gameManager.cleanup === 'function') {
+        this.gameManager.cleanup();
+      }
+    }
+
+    // Clean up event listeners that might have accumulated
+    this.cleanupEventListeners();
+  }
+
+  /**
+   * Cleans up unused event listeners
+   * @private
+   */
+  cleanupEventListeners() {
+    // Remove listeners that might be stale
+    this.eventListeners.forEach((listeners, eventName) => {
+      // Filter out any null or undefined listeners
+      const validListeners = listeners.filter(listener => 
+        typeof listener === 'function'
+      );
+      
+      if (validListeners.length !== listeners.length) {
+        this.eventListeners.set(eventName, validListeners);
+      }
+      
+      // Remove empty event arrays
+      if (validListeners.length === 0) {
+        this.eventListeners.delete(eventName);
+      }
+    });
+  }
+
+  /**
+   * Destroys the engine and cleans up all resources
+   */
+  destroy() {
+    // Unregister from memory manager
+    memoryManager.unregisterCleanupCallback(this.performCleanup);
+
+    // Clear all event listeners
+    this.eventListeners.clear();
+
+    // Clean up game manager
+    if (this.gameManager && typeof this.gameManager.destroy === 'function') {
+      this.gameManager.destroy();
+    }
+
+    // Clear references
+    this.gameManager = null;
+    this.config = null;
   }
 
   /**

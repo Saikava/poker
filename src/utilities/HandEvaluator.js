@@ -1,5 +1,6 @@
 const Card = require('../models/Card');
 const { HandEvaluationError, InvalidInputError } = require('../errors/PokerErrors');
+const HandEvaluationCache = require('./HandEvaluationCache');
 
 /**
  * Hand types in order of strength (lowest to highest)
@@ -33,6 +34,7 @@ class HandResult {
  * Static class for evaluating poker hands
  */
 class HandEvaluator {
+  static cache = new HandEvaluationCache();
   /**
    * Evaluates the best 5-card poker hand from given cards
    * @param {Card[]} cards - Array of cards (can be more than 5)
@@ -73,40 +75,84 @@ class HandEvaluator {
       }
     }
 
+    // Check cache first
+    const cachedResult = this.cache.get(cards);
+    if (cachedResult) {
+      return new HandResult(
+        cachedResult.handType,
+        cachedResult.strength,
+        cachedResult.cards,
+        cachedResult.kickers
+      );
+    }
+
     try {
       // Sort cards by value (descending)
       const sortedCards = [...cards].sort((a, b) => b.value - a.value);
       
       // Check for each hand type from highest to lowest
       let result = this._checkRoyalFlush(sortedCards);
-      if (result) return result;
+      if (result) {
+        this.cache.set(cards, result);
+        return result;
+      }
 
       result = this._checkStraightFlush(sortedCards);
-      if (result) return result;
+      if (result) {
+        this.cache.set(cards, result);
+        return result;
+      }
 
       result = this._checkFourOfAKind(sortedCards);
-      if (result) return result;
+      if (result) {
+        this.cache.set(cards, result);
+        return result;
+      }
 
       result = this._checkFullHouse(sortedCards);
-      if (result) return result;
+      if (result) {
+        this.cache.set(cards, result);
+        return result;
+      }
 
       result = this._checkFlush(sortedCards);
-      if (result) return result;
+      if (result) {
+        this.cache.set(cards, result);
+        return result;
+      }
 
       result = this._checkStraight(sortedCards);
-      if (result) return result;
+      if (result) {
+        this.cache.set(cards, result);
+        return result;
+      }
 
       result = this._checkThreeOfAKind(sortedCards);
-      if (result) return result;
+      if (result) {
+        this.cache.set(cards, result);
+        return result;
+      }
 
       result = this._checkTwoPair(sortedCards);
-      if (result) return result;
+      if (result) {
+        this.cache.set(cards, result);
+        return result;
+      }
 
       result = this._checkPair(sortedCards);
-      if (result) return result;
+      if (result) {
+        this.cache.set(cards, result);
+        return result;
+      }
 
-      return this._checkHighCard(sortedCards);
+      result = this._checkHighCard(sortedCards);
+      this.cache.set(cards, result);
+      return result;
     } catch (error) {
+      // Re-throw HandEvaluationError as-is, wrap other errors
+      if (error instanceof HandEvaluationError) {
+        throw error;
+      }
       throw new HandEvaluationError('Failed to evaluate hand', {
         originalError: error.message,
         cardsCount: cards.length
@@ -489,6 +535,29 @@ class HandEvaluator {
     }
     
     return 0; // Tie
+  }
+
+  /**
+   * Gets cache statistics for performance monitoring
+   * @returns {Object} Cache performance statistics
+   */
+  static getCacheStats() {
+    return this.cache.getStats();
+  }
+
+  /**
+   * Clears the hand evaluation cache
+   */
+  static clearCache() {
+    this.cache.clear();
+  }
+
+  /**
+   * Optimizes the cache by removing least recently used entries
+   * @param {number} targetSize - Target cache size (optional)
+   */
+  static optimizeCache(targetSize) {
+    this.cache.optimize(targetSize);
   }
 }
 
