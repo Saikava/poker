@@ -1,0 +1,21 @@
+{
+  "name": "Auto Commit After Task",
+  "description": "Automatically commit changes to git after every task is completed",
+  "trigger": {
+    "type": "taskCompleted"
+  },
+  "actions": [
+    {
+      "type": "shell",
+      "command": "git add .",
+      "description": "Stage all changes"
+    },
+    {
+      "type": "shell",
+      "command": "git commit -m \"Auto-commit: Task completed at $(date)\"",
+      "description": "Commit staged changes with timestamp"
+    }
+  ],
+  "enabled": true,
+  "autoApprove": false
+}

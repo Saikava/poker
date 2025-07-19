@@ -25,7 +25,12 @@
   - Write tests to verify HTML structure and CSS class application
   - _Requirements: 6.1, 6.4_
 
-- [-] 3. Implement game controller with poker engine integration
+- [x] 3. Implement game controller with poker engine integration
+
+
+
+
+
 
 
   - Create gameController.js that instantiates poker engine in browser
@@ -34,7 +39,9 @@
   - Test poker engine integration and method responses
   - _Requirements: 1.1, 1.2_
 
-- [ ] 4. Build player management UI functionality
+- [-] 4. Build player management UI functionality
+
+
 
   - Implement UI for adding players with ID and name inputs
   - Create player list display showing added players with remove buttons
@@ -43,6 +50,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
 - [ ] 5. Implement game state display components
+
 
   - Create UI components to display current game phase, hand number, and pot information
   - Implement community cards display area

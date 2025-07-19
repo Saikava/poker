@@ -33,7 +33,13 @@
     "collectCoverageFrom": [
       "src/**/*.js",
       "!src/main.js"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^@poker-engine/(.*)$": "<rootDir>/../src/$1"
+    },
+    "transform": {
+      "^.+\\.js$": "babel-jest"
+    }
   },
   "keywords": ["poker", "testing", "ui"],
   "author": "",
