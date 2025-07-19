@@ -419,21 +419,48 @@ section h3 {
     background-color: #fdf2f2;
     border: 1px solid #f5c6cb;
     border-left: 4px solid #dc3545;
+    animation: slideIn 0.3s ease-out;
 }
 
-.error-display h3 {
+.error-display h2 {
     color: #721c24;
     margin-bottom: 10px;
+    border-bottom-color: #dc3545;
 }
 
 .error-message {
     background-color: white;
-    padding: 10px;
+    padding: 15px;
     border-radius: 4px;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     color: #721c24;
     font-family: monospace;
     white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #f5c6cb;
+}
+
+.error-message:empty {
+    padding: 10px;
+    font-style: italic;
+    color: #999;
+}
+
+.error-message:empty::before {
+    content: "No error message provided";
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Hand Results */

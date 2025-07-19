@@ -166,7 +166,7 @@ class UIManager {
       this.updateStartGameButton();
     } else {
       // Display error from poker engine
-      const errorMessage = result.error ? result.error.message : 'Failed to add player';
+      const errorMessage = (result.error && result.error.message) ? result.error.message : 'Failed to add player';
       this.showError(errorMessage);
     }
   }
@@ -190,7 +190,7 @@ class UIManager {
       this.updateStartGameButton();
     } else {
       // Display error from poker engine
-      const errorMessage = result.error ? result.error.message : 'Failed to remove player';
+      const errorMessage = (result.error && result.error.message) ? result.error.message : 'Failed to remove player';
       this.showError(errorMessage);
     }
   }
@@ -283,7 +283,7 @@ class UIManager {
       this.refreshUI();
     } else {
       // Display error from poker engine
-      const errorMessage = result.error ? result.error.message : 'Failed to start game';
+      const errorMessage = (result.error && result.error.message) ? result.error.message : 'Failed to start game';
       this.showError(errorMessage);
     }
   }
@@ -303,7 +303,7 @@ class UIManager {
       this.refreshUI();
     } else {
       // Display error from poker engine
-      const errorMessage = result.error ? result.error.message : 'Failed to start new hand';
+      const errorMessage = (result.error && result.error.message) ? result.error.message : 'Failed to start new hand';
       this.showError(errorMessage);
     }
   }
@@ -339,14 +339,27 @@ class UIManager {
 
   /**
    * Show error message
+   * Displays poker engine error responses without processing
    */
   showError(message) {
-    this.elements.errorMessage.textContent = message;
+    // Handle null/undefined messages by converting to empty string
+    const displayMessage = message != null ? String(message) : '';
+    
+    // Set error message as plain text to prevent XSS
+    this.elements.errorMessage.textContent = displayMessage;
+    
+    // Show error display section
     this.elements.errorDisplay.style.display = 'block';
+    
+    // Scroll error into view if it's not visible
+    if (this.elements.errorDisplay.scrollIntoView) {
+      this.elements.errorDisplay.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   /**
    * Clear error message
+   * Clears error display when new actions are taken
    */
   clearError() {
     this.elements.errorMessage.textContent = '';
@@ -712,7 +725,7 @@ class UIManager {
       this.refreshUI();
     } else {
       // Display error from poker engine
-      const errorMessage = result.error ? result.error.message : `Failed to perform ${action} action`;
+      const errorMessage = (result.error && result.error.message) ? result.error.message : `Failed to perform ${action} action`;
       this.showError(errorMessage);
     }
   }
@@ -789,7 +802,7 @@ class UIManager {
       this.refreshUI();
     } else {
       // Display error from poker engine
-      const errorMessage = result.error ? result.error.message : 'Failed to perform raise action';
+      const errorMessage = (result.error && result.error.message) ? result.error.message : 'Failed to perform raise action';
       this.showError(errorMessage);
     }
   }
