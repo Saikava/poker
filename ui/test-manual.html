@@ -3,346 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual Player Management Test</title>
+    <title>Manual Bundle Test</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        .test-section { margin-bottom: 30px; padding: 20px; border: 1px solid #ccc; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
         .success { color: green; }
         .error { color: red; }
-        button { margin: 5px; padding: 5px 10px; }
-        input { margin: 5px; padding: 5px; }
-        .player-item { 
-            padding: 10px; 
-            margin: 5px 0; 
-            background: #f0f0f0; 
-            border-radius: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .error-display { 
-            background: #ffe6e6; 
-            border: 1px solid #ff9999; 
-            padding: 10px; 
-            margin: 10px 0;
-            display: none;
-        }
+        .info { color: blue; }
     </style>
 </head>
 <body>
-    <h1>Manual Player Management Test</h1>
+    <h1>Manual Bundle Test</h1>
+    <p>This page tests if the bundled poker UI application works correctly in the browser.</p>
     
     <div class="test-section">
-        <h2>Player Management</h2>
-        
-        <div>
-            <label>Player ID: <input type="text" id="player-id" placeholder="Enter player ID"></label>
-            <label>Player Name: <input type="text" id="player-name" placeholder="Enter player name"></label>
-            <button id="add-player-btn">Add Player</button>
-        </div>
-        
-        <div class="error-display" id="error-display">
-            <div id="error-message"></div>
-            <button id="clear-error-btn">Clear Error</button>
-        </div>
-        
-        <div>
-            <h3>Players</h3>
-            <div id="players-container">
-                <p class="no-players">No players added yet</p>
-            </div>
-        </div>
-        
-        <div>
-            <button id="start-game-btn" disabled>Start Game</button>
-        </div>
+        <h2>Test Instructions</h2>
+        <ol>
+            <li>Build the application: <code>npm run build</code></li>
+            <li>Open <code>dist/index.html</code> in your browser</li>
+            <li>Verify the following functionality:</li>
+            <ul>
+                <li>Page loads without console errors</li>
+                <li>All UI sections are visible</li>
+                <li>Player management form is functional</li>
+                <li>Game controls are present</li>
+                <li>No JavaScript errors in browser console</li>
+            </ul>
+        </ol>
     </div>
 
     <div class="test-section">
-        <h2>Test Results</h2>
-        <div id="test-results"></div>
+        <h2>Alternative: Development Server Test</h2>
+        <ol>
+            <li>Start development server: <code>npm run serve</code></li>
+            <li>Open <a href="http://localhost:8080">http://localhost:8080</a></li>
+            <li>Test the same functionality as above</li>
+            <li>Verify hot reloading works by making a small change to source files</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Expected Results</h2>
+        <ul>
+            <li class="success">✅ Poker Engine UI loads successfully</li>
+            <li class="success">✅ All UI components are visible and styled</li>
+            <li class="success">✅ No console errors related to missing modules</li>
+            <li class="success">✅ Poker engine integration works (can add players)</li>
+            <li class="success">✅ Game state updates properly</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Troubleshooting</h2>
+        <p>If you encounter issues:</p>
+        <ul>
+            <li>Check browser console for JavaScript errors</li>
+            <li>Verify all files exist in the dist/ directory</li>
+            <li>Run <code>node test-bundle.js</code> to verify build integrity</li>
+            <li>Try rebuilding with <code>npm run clean && npm run build</code></li>
+        </ul>
     </div>
 
     <script>
-        // Mock game controller for testing
-        class MockGameController {
-            constructor() {
-                this.players = [];
-                this.config = { startingChips: 1000, minPlayers: 2, maxPlayers: 6 };
-            }
-
-            addPlayer(playerConfig) {
-                // Check for duplicate ID
-                if (this.players.find(p => p.id === playerConfig.id)) {
-                    return {
-                        success: false,
-                        error: { message: 'Player ID already exists' }
-                    };
-                }
-
-                this.players.push(playerConfig);
-                return { success: true };
-            }
-
-            removePlayer(playerId) {
-                const index = this.players.findIndex(p => p.id === playerId);
-                if (index === -1) {
-                    return {
-                        success: false,
-                        error: { message: 'Player not found' }
-                    };
-                }
-
-                this.players.splice(index, 1);
-                return { success: true };
-            }
-
-            canStartGame() {
-                return {
-                    canStart: this.players.length >= this.config.minPlayers,
-                    playerCount: this.players.length,
-                    minPlayers: this.config.minPlayers
-                };
-            }
-
-            getConfig() {
-                return this.config;
-            }
-
-            destroy() {}
-            isReady() { return true; }
-        }
-
-        // Simple UI Manager implementation
-        class SimpleUIManager {
-            constructor() {
-                this.gameController = new MockGameController();
-                this.currentPlayers = [];
-                this.elements = {};
-                
-                this.initializeElements();
-                this.bindEvents();
-                this.runTests();
-            }
-
-            initializeElements() {
-                this.elements.playerIdInput = document.getElementById('player-id');
-                this.elements.playerNameInput = document.getElementById('player-name');
-                this.elements.addPlayerBtn = document.getElementById('add-player-btn');
-                this.elements.playersContainer = document.getElementById('players-container');
-                this.elements.startGameBtn = document.getElementById('start-game-btn');
-                this.elements.errorDisplay = document.getElementById('error-display');
-                this.elements.errorMessage = document.getElementById('error-message');
-                this.elements.clearErrorBtn = document.getElementById('clear-error-btn');
-            }
-
-            bindEvents() {
-                this.elements.addPlayerBtn.addEventListener('click', () => this.handleAddPlayer());
-                this.elements.clearErrorBtn.addEventListener('click', () => this.clearError());
-                
-                this.elements.playerIdInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.handleAddPlayer();
-                });
-                this.elements.playerNameInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.handleAddPlayer();
-                });
-            }
-
-            handleAddPlayer() {
-                const playerId = this.elements.playerIdInput.value.trim();
-                const playerName = this.elements.playerNameInput.value.trim();
-
-                this.clearError();
-
-                if (!playerId || !playerName) {
-                    this.showError('Both Player ID and Player Name are required');
-                    return;
-                }
-
-                const result = this.gameController.addPlayer({
-                    id: playerId,
-                    name: playerName,
-                    chips: this.gameController.getConfig().startingChips
-                });
-
-                if (result.success) {
-                    this.currentPlayers.push({
-                        id: playerId,
-                        name: playerName,
-                        chips: this.gameController.getConfig().startingChips
-                    });
-
-                    this.updatePlayerList();
-                    this.clearPlayerForm();
-                    this.updateStartGameButton();
-                } else {
-                    const errorMessage = result.error ? result.error.message : 'Failed to add player';
-                    this.showError(errorMessage);
-                }
-            }
-
-            handleRemovePlayer(playerId) {
-                this.clearError();
-
-                const result = this.gameController.removePlayer(playerId);
-
-                if (result.success) {
-                    this.currentPlayers = this.currentPlayers.filter(player => player.id !== playerId);
-                    this.updatePlayerList();
-                    this.updateStartGameButton();
-                } else {
-                    const errorMessage = result.error ? result.error.message : 'Failed to remove player';
-                    this.showError(errorMessage);
-                }
-            }
-
-            updatePlayerList() {
-                const container = this.elements.playersContainer;
-                
-                if (this.currentPlayers.length === 0) {
-                    container.innerHTML = '<p class="no-players">No players added yet</p>';
-                    return;
-                }
-
-                const playersHtml = this.currentPlayers.map(player => `
-                    <div class="player-item" data-player-id="${player.id}">
-                        <div class="player-info">
-                            <span class="player-name">${this.escapeHtml(player.name)}</span>
-                            <span class="player-id">(ID: ${this.escapeHtml(player.id)})</span>
-                            <span class="player-chips">Chips: $${player.chips}</span>
-                        </div>
-                        <button type="button" class="remove-player-btn" data-player-id="${player.id}">
-                            Remove
-                        </button>
-                    </div>
-                `).join('');
-
-                container.innerHTML = playersHtml;
-
-                container.querySelectorAll('.remove-player-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const playerId = e.target.getAttribute('data-player-id');
-                        this.handleRemovePlayer(playerId);
-                    });
-                });
-            }
-
-            clearPlayerForm() {
-                this.elements.playerIdInput.value = '';
-                this.elements.playerNameInput.value = '';
-                this.elements.playerIdInput.focus();
-            }
-
-            updateStartGameButton() {
-                const canStartResult = this.gameController.canStartGame();
-                this.elements.startGameBtn.disabled = !canStartResult.canStart;
-            }
-
-            showError(message) {
-                this.elements.errorMessage.textContent = message;
-                this.elements.errorDisplay.style.display = 'block';
-            }
-
-            clearError() {
-                this.elements.errorMessage.textContent = '';
-                this.elements.errorDisplay.style.display = 'none';
-            }
-
-            escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-
-            // Automated tests
-            runTests() {
-                const results = document.getElementById('test-results');
-                const tests = [];
-
-                // Test 1: Add valid player
-                try {
-                    this.elements.playerIdInput.value = 'test1';
-                    this.elements.playerNameInput.value = 'Test Player 1';
-                    this.handleAddPlayer();
-                    
-                    if (this.currentPlayers.length === 1 && this.currentPlayers[0].id === 'test1') {
-                        tests.push('<div class="success">✓ Add valid player: PASSED</div>');
-                    } else {
-                        tests.push('<div class="error">✗ Add valid player: FAILED</div>');
-                    }
-                } catch (e) {
-                    tests.push('<div class="error">✗ Add valid player: ERROR - ' + e.message + '</div>');
-                }
-
-                // Test 2: Add duplicate player
-                try {
-                    this.elements.playerIdInput.value = 'test1';
-                    this.elements.playerNameInput.value = 'Duplicate Player';
-                    this.handleAddPlayer();
-                    
-                    if (this.elements.errorDisplay.style.display === 'block' && 
-                        this.elements.errorMessage.textContent.includes('already exists')) {
-                        tests.push('<div class="success">✓ Reject duplicate player: PASSED</div>');
-                    } else {
-                        tests.push('<div class="error">✗ Reject duplicate player: FAILED</div>');
-                    }
-                } catch (e) {
-                    tests.push('<div class="error">✗ Reject duplicate player: ERROR - ' + e.message + '</div>');
-                }
-
-                // Test 3: Add second player and check start button
-                try {
-                    this.clearError();
-                    this.elements.playerIdInput.value = 'test2';
-                    this.elements.playerNameInput.value = 'Test Player 2';
-                    this.handleAddPlayer();
-                    
-                    if (this.currentPlayers.length === 2 && !this.elements.startGameBtn.disabled) {
-                        tests.push('<div class="success">✓ Enable start button with 2 players: PASSED</div>');
-                    } else {
-                        tests.push('<div class="error">✗ Enable start button with 2 players: FAILED</div>');
-                    }
-                } catch (e) {
-                    tests.push('<div class="error">✗ Enable start button with 2 players: ERROR - ' + e.message + '</div>');
-                }
-
-                // Test 4: Remove player
-                try {
-                    this.handleRemovePlayer('test1');
-                    
-                    if (this.currentPlayers.length === 1 && this.currentPlayers[0].id === 'test2') {
-                        tests.push('<div class="success">✓ Remove player: PASSED</div>');
-                    } else {
-                        tests.push('<div class="error">✗ Remove player: FAILED</div>');
-                    }
-                } catch (e) {
-                    tests.push('<div class="error">✗ Remove player: ERROR - ' + e.message + '</div>');
-                }
-
-                // Test 5: Empty input validation
-                try {
-                    this.clearError();
-                    this.elements.playerIdInput.value = '';
-                    this.elements.playerNameInput.value = 'Test';
-                    this.handleAddPlayer();
-                    
-                    if (this.elements.errorDisplay.style.display === 'block' && 
-                        this.elements.errorMessage.textContent.includes('required')) {
-                        tests.push('<div class="success">✓ Validate empty inputs: PASSED</div>');
-                    } else {
-                        tests.push('<div class="error">✗ Validate empty inputs: FAILED</div>');
-                    }
-                } catch (e) {
-                    tests.push('<div class="error">✗ Validate empty inputs: ERROR - ' + e.message + '</div>');
-                }
-
-                results.innerHTML = tests.join('');
-            }
-        }
-
-        // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            new SimpleUIManager();
+        // Simple test to verify this page loads
+        console.log('Manual test page loaded successfully');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, manual test page ready');
         });
     </script>
 </body>

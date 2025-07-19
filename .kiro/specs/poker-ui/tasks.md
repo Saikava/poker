@@ -132,7 +132,12 @@ for complete game flow from start to finish
   - _Requirements: 4.6, 6.5_
 
 
-- [ ] 11. Bundle application and create build process
+- [x] 11. Bundle application and create build process
+
+
+
+
+
 
 
   - Configure webpack to create browser-compatible bundle
