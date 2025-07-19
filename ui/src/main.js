@@ -1,4 +1,5 @@
 // Main entry point for poker UI application
+import './styles.css';
 const UIManager = require('./uiManager.js');
 
 console.log('Poker UI application starting...');
