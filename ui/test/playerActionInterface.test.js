@@ -47,8 +47,7 @@ describe('Player Action Interface', () => {
     // Create JSDOM instance
     dom = new JSDOM(htmlContent, {
       url: 'http://localhost',
-      pretendToBeVisual: true,
-      resources: 'usable'
+      pretendToBeVisual: true
     });
     
     document = dom.window.document;
@@ -56,7 +55,7 @@ describe('Player Action Interface', () => {
     global.window = dom.window;
     
     // Import UIManager after setting up DOM
-    UIManager = require('../src/uiManager.js').default;
+    UIManager = require('../src/uiManager.js');
   });
 
   beforeEach(() => {

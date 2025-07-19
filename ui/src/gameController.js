@@ -3,8 +3,8 @@
  * Provides a browser-compatible wrapper around the poker engine
  */
 
-// Import the poker engine using the webpack alias
-import PokerEngine from '@poker-engine/PokerEngine';
+// Import the poker engine using CommonJS
+const PokerEngine = require('../../src/PokerEngine');
 
 /**
  * GameController class that wraps the poker engine for browser use
@@ -336,4 +336,4 @@ class GameController {
   }
 }
 
-export default GameController;
+module.exports = GameController;

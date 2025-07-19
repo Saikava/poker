@@ -396,11 +396,13 @@ class PokerEngine {
       
       // Betting information
       betting: {
+        currentPlayer: gameState.currentPlayer,
         currentBet: gameState.betting.currentBet,
         minRaise: gameState.betting.minRaise,
         bettingRound: gameState.betting.bettingRound,
         bettingComplete: gameState.betting.bettingComplete,
-        lastAggressor: gameState.betting.lastAggressorId
+        lastAggressor: gameState.betting.lastAggressorId,
+        callAmount: gameState.betting.callAmount
       },
       
       // Pot information

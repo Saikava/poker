@@ -19,8 +19,7 @@ describe('Player Management UI Integration', () => {
     
     dom = new JSDOM(htmlContent, {
       url: 'http://localhost',
-      pretendToBeVisual: true,
-      resources: 'usable'
+      pretendToBeVisual: true
     });
     
     global.document = dom.window.document;

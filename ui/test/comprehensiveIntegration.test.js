@@ -33,15 +33,14 @@ describe('Comprehensive Integration Tests', () => {
   let uiManager;
   let mockGameController;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     // Load the HTML file
     const htmlPath = path.join(__dirname, '../src/index.html');
     const htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
     // Create JSDOM instance
     dom = new JSDOM(htmlContent, {
-      runScripts: 'dangerously',
-      resources: 'usable'
+      runScripts: 'dangerously'
     });
 
     document = dom.window.document;
@@ -54,8 +53,7 @@ describe('Comprehensive Integration Tests', () => {
     global.Event = window.Event;
 
     // Import UIManager after setting up globals
-    const UIManagerModule = await import('../src/uiManager.js');
-    UIManager = UIManagerModule.default;
+    UIManager = require('../src/uiManager.js');
   });
 
   beforeEach(() => {

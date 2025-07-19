@@ -3,7 +3,7 @@
  * Handles all DOM manipulation and user interactions
  */
 
-import GameController from './gameController.js';
+const GameController = require('./gameController.js');
 
 /**
  * UIManager class that manages all UI interactions and updates
@@ -1000,4 +1000,4 @@ class UIManager {
   }
 }
 
-export default UIManager;
+module.exports = UIManager;
