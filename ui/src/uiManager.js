@@ -697,11 +697,11 @@ class UIManager {
     
     // Get available actions from game controller
     const actionsResult = this.gameController.getPlayerActions(currentPlayerId);
-    if (!actionsResult.success || !actionsResult.actions) {
+    if (!actionsResult.success || !actionsResult.availableActions) {
       return;
     }
     
-    const availableActions = actionsResult.actions;
+    const availableActions = actionsResult.availableActions;
     
     // Enable buttons based on available actions
     if (availableActions.includes('fold')) {
@@ -713,7 +713,7 @@ class UIManager {
     if (availableActions.includes('call')) {
       this.elements.callBtn.disabled = false;
       // Update call button text with amount if available
-      const callAmount = actionsResult.callAmount || 0;
+      const callAmount = actionsResult.actionDetails?.callAmount || 0;
       this.elements.callBtn.textContent = callAmount > 0 ? `Call ${callAmount}` : 'Call';
     }
     if (availableActions.includes('raise')) {
@@ -774,8 +774,8 @@ class UIManager {
       return;
     }
     
-    const minRaise = actionsResult.minRaise || 0;
-    const maxRaise = actionsResult.maxRaise || 1000;
+    const minRaise = actionsResult.actionDetails?.minRaise || 0;
+    const maxRaise = actionsResult.actionDetails?.maxRaise || 1000;
     
     // Set up raise input
     this.elements.raiseAmount.min = minRaise;

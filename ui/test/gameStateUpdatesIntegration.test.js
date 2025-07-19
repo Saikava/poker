@@ -153,10 +153,12 @@ describe('Game State Updates Integration Tests', () => {
       // Phase 3: Player actions
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'call', 'raise'],
-        callAmount: 10,
-        minRaise: 20,
-        maxRaise: 980
+        availableActions: ['fold', 'call', 'raise'],
+        actionDetails: {
+          callAmount: 10,
+          minRaise: 20,
+          maxRaise: 980
+        }
       });
       
       // Player 1 calls - first set up the action response
@@ -328,7 +330,7 @@ describe('Game State Updates Integration Tests', () => {
       });
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'call', 'raise']
+        availableActions: ['fold', 'call', 'raise']
       });
       
       uiManager.refreshUI();
@@ -393,9 +395,11 @@ describe('Game State Updates Integration Tests', () => {
       });
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'call', 'raise'],
-        minRaise: 20,
-        maxRaise: 980
+        availableActions: ['fold', 'call', 'raise'],
+        actionDetails: {
+          minRaise: 20,
+          maxRaise: 980
+        }
       });
       
       uiManager.refreshUI();

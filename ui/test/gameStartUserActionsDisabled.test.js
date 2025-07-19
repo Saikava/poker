@@ -202,9 +202,11 @@ describe('Game Start User Actions Disabled Bug', () => {
       // Mock available player actions
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'call', 'raise'],
-        callAmount: 10,
-        minRaise: 20
+        availableActions: ['fold', 'call', 'raise'],
+        actionDetails: {
+          callAmount: 10,
+          minRaise: 20
+        }
       });
 
       // Start the game
@@ -295,9 +297,11 @@ describe('Game Start User Actions Disabled Bug', () => {
       
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'call', 'raise'],
-        callAmount: 10,
-        minRaise: 20
+        availableActions: ['fold', 'call', 'raise'],
+        actionDetails: {
+          callAmount: 10,
+          minRaise: 20
+        }
       });
 
       // Update action buttons for current player
@@ -369,8 +373,10 @@ describe('Game Start User Actions Disabled Bug', () => {
       mockGameController.getGameState.mockReturnValue(gameStateFixed);
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'call', 'raise'],
-        callAmount: 10
+        availableActions: ['fold', 'call', 'raise'],
+        actionDetails: {
+          callAmount: 10
+        }
       });
       
       // Call updatePlayerActions with the fixed game state
@@ -403,7 +409,7 @@ describe('Game Start User Actions Disabled Bug', () => {
       mockGameController.getGameState.mockReturnValue(gameState);
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'call', 'raise']
+        availableActions: ['fold', 'call', 'raise']
       });
 
       // Spy on the update methods to see if they're called

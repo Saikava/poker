@@ -112,7 +112,7 @@ describe('Player Action Interface', () => {
       });
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'check', 'raise']
+        availableActions: ['fold', 'check', 'raise']
       });
 
       uiManager.updatePlayerActions(gameState);
@@ -139,8 +139,10 @@ describe('Player Action Interface', () => {
       });
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'call'],
-        callAmount: 50
+        availableActions: ['fold', 'call'],
+        actionDetails: {
+          callAmount: 50
+        }
       });
 
       uiManager.updatePlayerActions(gameState);
@@ -310,8 +312,10 @@ describe('Player Action Interface', () => {
       mockGameController.getGameState.mockReturnValue(gameState);
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        minRaise: 40,
-        maxRaise: 500
+        actionDetails: {
+          minRaise: 40,
+          maxRaise: 500
+        }
       });
 
       uiManager.handleRaiseClick();
@@ -462,8 +466,10 @@ describe('Player Action Interface', () => {
       mockGameController.getGameState.mockReturnValue(gameState);
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        minRaise: 40,
-        maxRaise: 500
+        actionDetails: {
+          minRaise: 40,
+          maxRaise: 500
+        }
       });
 
       const raiseBtn = document.getElementById('raise-btn');
@@ -541,7 +547,7 @@ describe('Player Action Interface', () => {
       });
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'check', 'raise']
+        availableActions: ['fold', 'check', 'raise']
       });
       mockGameController.canStartGame.mockReturnValue({
         canStart: false

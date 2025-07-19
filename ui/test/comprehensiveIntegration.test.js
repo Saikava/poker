@@ -139,8 +139,10 @@ describe('Comprehensive Integration Tests', () => {
       // Phase 3: Preflop betting - Bob calls
       mockGameController.getPlayerActions.mockReturnValue({
         success: true,
-        actions: ['fold', 'call', 'raise'],
-        callAmount: 10
+        availableActions: ['fold', 'call', 'raise'],
+        actionDetails: {
+          callAmount: 10
+        }
       });
       mockGameController.playerAction.mockReturnValue({ success: true });
 
