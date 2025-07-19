@@ -3,8 +3,8 @@
  * Tests error display and clearing functionality
  */
 
-import { JSDOM } from 'jsdom';
-import UIManager from '../src/uiManager.js';
+const { JSDOM } = require('jsdom');
+const UIManager = require('../src/uiManager.js');
 
 // Mock the GameController
 const createMockGameController = () => ({

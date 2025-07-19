@@ -3,7 +3,7 @@
  * Tests the poker engine integration and method responses
  */
 
-import GameController from '../src/gameController.js';
+const GameController = require('../src/gameController.js');
 
 describe('GameController', () => {
   let gameController;
