@@ -106,6 +106,13 @@ section h3 {
     padding: 10px;
 }
 
+.no-players {
+    text-align: center;
+    color: #7f8c8d;
+    font-style: italic;
+    padding: 20px;
+}
+
 .player-item {
     display: flex;
     justify-content: space-between;
@@ -123,6 +130,9 @@ section h3 {
 
 .player-info {
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .player-name {
@@ -139,6 +149,15 @@ section h3 {
     font-size: 0.9em;
     color: #27ae60;
     font-weight: bold;
+}
+
+.btn-small {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.remove-player-btn {
+    flex-shrink: 0;
 }
 
 /* Game Controls */

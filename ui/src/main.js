@@ -1,20 +1,29 @@
 // Main entry point for poker UI application
-import GameController from './gameController.js';
+import UIManager from './uiManager.js';
 
 console.log('Poker UI application starting...');
 
-// Test GameController integration
+// Global UI manager instance
+let uiManager = null;
+
+// Initialize UI when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded, poker UI ready');
+  console.log('DOM loaded, initializing poker UI...');
   
-  // Test that GameController can be instantiated
   try {
-    const gameController = new GameController();
-    console.log('GameController initialized successfully:', gameController.isReady());
-    
-    // Clean up
-    gameController.destroy();
+    uiManager = new UIManager();
+    console.log('Poker UI initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize GameController:', error);
+    console.error('Failed to initialize Poker UI:', error);
   }
 });
+
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
+  if (uiManager) {
+    uiManager.destroy();
+  }
+});
+
+// Export for testing
+export { uiManager };
