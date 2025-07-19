@@ -90,7 +90,10 @@ function simulateUserInput(element, value) {
  * Simulates button clicks for testing
  */
 function simulateClick(element) {
-  element.dispatchEvent(new Event('click', { bubbles: true }));
+  const event = element.ownerDocument.defaultView.Event 
+    ? new element.ownerDocument.defaultView.Event('click', { bubbles: true })
+    : new Event('click', { bubbles: true });
+  element.dispatchEvent(event);
 }
 
 /**

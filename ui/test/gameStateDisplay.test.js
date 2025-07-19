@@ -2,13 +2,7 @@
 const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const path = require('path');
-const { 
-  createMockPokerEngine, 
-  createSampleGameState, 
-  createSamplePlayer,
-  createTestContainer,
-  cleanupTestContainer
-} = require('./helpers/testHelpers');
+// Test helpers are available but not used in this file
 
 // Mock the GameController
 jest.mock('../src/gameController.js', () => {
@@ -57,6 +51,15 @@ describe('Game State Display Components', () => {
   });
 
   beforeEach(() => {
+    // Clear all mocks before each test
+    jest.clearAllMocks();
+    
+    // Reset DOM to initial state
+    const totalPotElement = document.getElementById('total-pot');
+    if (totalPotElement) {
+      totalPotElement.textContent = '$0'; // Reset to initial HTML value
+    }
+    
     // Create fresh UI manager instance for each test with document reference
     uiManager = new UIManager(document);
     mockGameController = uiManager.getGameController();
@@ -277,6 +280,8 @@ describe('Game State Display Components', () => {
         totalPot: 0,
         isGameActive: false
       });
+
+
 
       uiManager.updateGameStateDisplay();
       

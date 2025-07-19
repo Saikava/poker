@@ -347,6 +347,26 @@ section h3 {
     border-left: 4px solid #3498db;
 }
 
+.current-player-highlight {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.player-action-info {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.player-action-info span {
+    padding: 2px 8px;
+    background-color: #f8f9fa;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+}
+
 .action-buttons {
     margin-bottom: 15px;
 }
@@ -354,6 +374,12 @@ section h3 {
 .action-buttons .btn {
     margin-right: 10px;
     margin-bottom: 10px;
+    min-width: 80px;
+}
+
+.action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .raise-controls {
@@ -361,6 +387,18 @@ section h3 {
     padding: 15px;
     border-radius: 5px;
     border: 1px solid #ddd;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .raise-controls .form-group {
@@ -369,6 +407,10 @@ section h3 {
 
 .raise-controls .btn {
     margin-right: 10px;
+}
+
+.raise-controls input[type="number"] {
+    width: 150px;
 }
 
 /* Error Display */

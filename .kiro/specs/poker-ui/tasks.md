@@ -57,13 +57,18 @@
 
 
 
+
   - Create UI components to display current game phase, hand number, and pot information
   - Implement community cards display area
   - Build player cards and chip display for each player
   - Write tests to verify game state information is displayed correctly
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 6. Build game control functionality
+
+- [x] 6. Build game control functionality
+
+
+
 
   - Implement start game button with enable/disable logic based on player count
   - Create new hand button for starting subsequent hands
@@ -73,29 +78,42 @@
 
 - [ ] 7. Create player action interface
 
+
+
   - Build action buttons (fold, check, call, raise) that show/hide based on available actions
   - Implement raise amount input field with validation
   - Create current player highlighting and turn indicators
   - Write tests for action button display and user interaction handling
   - _Requirements: 4.1, 4.2, 4.3, 4.5_
+-
+
+
 
 - [ ] 8. Implement comprehensive game state updates
 
   - Create UI update methods that refresh display after each poker engine call
   - Implement real-time display of player chips, bets, and card information
-  - Add hand results display when hands complete
-  - Write integration tests for complete game flow from start to finish
-  - _Requirements: 5.4, 3.4_
+  - Add hand results display
+ when hands complete
+  - Write integration tests 
+for complete game flow from start to finish
+  --_Requirements: 5.4, 3.4_
+
 
 - [ ] 9. Add error handling and display
+
 
   - Implement error message display area in UI
   - Create error clearing mechanism when new actions are taken
   - Display poker engine error responses without processing
+
   - Write tests for error display and clearing functionality
   - _Requirements: 4.4, 5.5_
 
-- [ ] 10. Create comprehensive integration tests
+- [-] 10. Create comprehensive integration tests
+
+
+
 
   - Write end-to-end tests that simulate complete poker games
   - Test multiple player scenarios with different action sequences
@@ -103,7 +121,9 @@
   - Implement test scenarios that verify UI matches poker engine state
   - _Requirements: 4.6, 6.5_
 
+
 - [ ] 11. Bundle application and create build process
+
 
   - Configure webpack to create browser-compatible bundle
   - Set up build scripts for development and production

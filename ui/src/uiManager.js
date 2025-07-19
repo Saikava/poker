@@ -36,6 +36,7 @@ class UIManager {
     
     // Game control elements
     this.elements.startGameBtn = this.document.getElementById('start-game-btn');
+    this.elements.newHandBtn = this.document.getElementById('new-hand-btn');
     
     // Game state display elements
     this.elements.gamePhase = this.document.getElementById('game-phase');
@@ -50,6 +51,18 @@ class UIManager {
     this.elements.errorDisplay = this.document.getElementById('error-display');
     this.elements.errorMessage = this.document.getElementById('error-message');
     this.elements.clearErrorBtn = this.document.getElementById('clear-error-btn');
+    
+    // Player action elements
+    this.elements.currentPlayerInfo = this.document.getElementById('current-player-info');
+    this.elements.actionButtons = this.document.getElementById('action-buttons');
+    this.elements.foldBtn = this.document.getElementById('fold-btn');
+    this.elements.checkBtn = this.document.getElementById('check-btn');
+    this.elements.callBtn = this.document.getElementById('call-btn');
+    this.elements.raiseBtn = this.document.getElementById('raise-btn');
+    this.elements.raiseControls = this.document.getElementById('raise-controls');
+    this.elements.raiseAmount = this.document.getElementById('raise-amount');
+    this.elements.confirmRaiseBtn = this.document.getElementById('confirm-raise-btn');
+    this.elements.cancelRaiseBtn = this.document.getElementById('cancel-raise-btn');
   }
 
   /**
@@ -64,6 +77,14 @@ class UIManager {
       this.elements.clearErrorBtn.addEventListener('click', () => this.clearError());
     }
     
+    // Game control events
+    if (this.elements.startGameBtn) {
+      this.elements.startGameBtn.addEventListener('click', () => this.handleStartGame());
+    }
+    if (this.elements.newHandBtn) {
+      this.elements.newHandBtn.addEventListener('click', () => this.handleNewHand());
+    }
+    
     // Allow Enter key to add player
     if (this.elements.playerIdInput) {
       this.elements.playerIdInput.addEventListener('keypress', (e) => {
@@ -73,6 +94,33 @@ class UIManager {
     if (this.elements.playerNameInput) {
       this.elements.playerNameInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') this.handleAddPlayer();
+      });
+    }
+    
+    // Player action events
+    if (this.elements.foldBtn) {
+      this.elements.foldBtn.addEventListener('click', () => this.handlePlayerAction('fold'));
+    }
+    if (this.elements.checkBtn) {
+      this.elements.checkBtn.addEventListener('click', () => this.handlePlayerAction('check'));
+    }
+    if (this.elements.callBtn) {
+      this.elements.callBtn.addEventListener('click', () => this.handlePlayerAction('call'));
+    }
+    if (this.elements.raiseBtn) {
+      this.elements.raiseBtn.addEventListener('click', () => this.handleRaiseClick());
+    }
+    if (this.elements.confirmRaiseBtn) {
+      this.elements.confirmRaiseBtn.addEventListener('click', () => this.handleConfirmRaise());
+    }
+    if (this.elements.cancelRaiseBtn) {
+      this.elements.cancelRaiseBtn.addEventListener('click', () => this.handleCancelRaise());
+    }
+    
+    // Allow Enter key to confirm raise
+    if (this.elements.raiseAmount) {
+      this.elements.raiseAmount.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') this.handleConfirmRaise();
       });
     }
   }
@@ -196,6 +244,77 @@ class UIManager {
   }
 
   /**
+   * Handle starting a new game
+   */
+  handleStartGame() {
+    // Clear any existing errors
+    this.clearError();
+
+    // Start game through game controller
+    const result = this.gameController.startGame();
+
+    if (result.success) {
+      // Update UI to reflect game started
+      this.updateGameControls();
+      this.updateGameStateDisplay();
+    } else {
+      // Display error from poker engine
+      const errorMessage = result.error ? result.error.message : 'Failed to start game';
+      this.showError(errorMessage);
+    }
+  }
+
+  /**
+   * Handle starting a new hand
+   */
+  handleNewHand() {
+    // Clear any existing errors
+    this.clearError();
+
+    // Start new hand through game controller
+    const result = this.gameController.startNewHand();
+
+    if (result.success) {
+      // Update UI to reflect new hand started
+      this.updateGameControls();
+      this.updateGameStateDisplay();
+    } else {
+      // Display error from poker engine
+      const errorMessage = result.error ? result.error.message : 'Failed to start new hand';
+      this.showError(errorMessage);
+    }
+  }
+
+  /**
+   * Update game control buttons based on current game state
+   */
+  updateGameControls() {
+    const gameStats = this.gameController.getGameStats();
+    const canStartResult = this.gameController.canStartGame();
+
+    // Update start game button
+    if (gameStats.isGameActive) {
+      this.elements.startGameBtn.disabled = true;
+      this.elements.startGameBtn.textContent = 'Game Active';
+    } else {
+      this.elements.startGameBtn.disabled = !canStartResult.canStart;
+      this.elements.startGameBtn.textContent = 'Start Game';
+    }
+
+    // Update new hand button
+    if (gameStats.isGameActive && (gameStats.currentPhase === 'complete' || gameStats.currentPhase === 'waiting')) {
+      this.elements.newHandBtn.disabled = false;
+      this.elements.newHandBtn.textContent = 'New Hand';
+    } else if (gameStats.isGameActive) {
+      this.elements.newHandBtn.disabled = true;
+      this.elements.newHandBtn.textContent = 'Hand in Progress';
+    } else {
+      this.elements.newHandBtn.disabled = true;
+      this.elements.newHandBtn.textContent = 'New Hand';
+    }
+  }
+
+  /**
    * Show error message
    */
   showError(message) {
@@ -251,6 +370,9 @@ class UIManager {
       // Update game info
       this.updateGameInfo(gameStats);
       
+      // Update game controls
+      this.updateGameControls();
+      
       // Update pot information
       this.updatePotDisplay(gameState);
       
@@ -259,6 +381,9 @@ class UIManager {
       
       // Update players display
       this.updatePlayersDisplay(gameState);
+      
+      // Update player actions
+      this.updatePlayerActions(gameState);
     } catch (error) {
       // Handle errors gracefully - in a real app, you might want to show an error message
       console.error('Error updating game state display:', error);
@@ -430,6 +555,216 @@ class UIManager {
         <div class="card-suit">${suitSymbol}</div>
       </div>
     `;
+  }
+
+  /**
+   * Update player actions display and functionality
+   */
+  updatePlayerActions(gameState) {
+    if (!this.elements.currentPlayerInfo || !this.elements.actionButtons) {
+      return;
+    }
+    
+    const currentPlayerId = gameState.betting ? gameState.betting.currentPlayer : null;
+    const gameStats = this.gameController.getGameStats();
+    
+    // Update current player info
+    this.updateCurrentPlayerInfo(gameState, currentPlayerId);
+    
+    // Update action buttons based on available actions
+    this.updateActionButtons(currentPlayerId, gameStats);
+  }
+
+  /**
+   * Update current player information display
+   */
+  updateCurrentPlayerInfo(gameState, currentPlayerId) {
+    if (!currentPlayerId || !gameState.players) {
+      this.elements.currentPlayerInfo.innerHTML = '<p>Waiting for game to start...</p>';
+      return;
+    }
+    
+    const currentPlayer = gameState.players.find(p => p.id === currentPlayerId);
+    if (!currentPlayer) {
+      this.elements.currentPlayerInfo.innerHTML = '<p>No current player</p>';
+      return;
+    }
+    
+    const callAmount = gameState.betting ? gameState.betting.callAmount : 0;
+    const minRaise = gameState.betting ? gameState.betting.minRaise : 0;
+    
+    this.elements.currentPlayerInfo.innerHTML = `
+      <div class="current-player-highlight">
+        <strong>Current Player: ${this.escapeHtml(currentPlayer.name)} (${this.escapeHtml(currentPlayer.id)})</strong>
+        <div class="player-action-info">
+          <span>Chips: ${currentPlayer.chips}</span>
+          <span>Current Bet: ${currentPlayer.bet || 0}</span>
+          ${callAmount > 0 ? `<span>Call Amount: ${callAmount}</span>` : ''}
+          ${minRaise > 0 ? `<span>Min Raise: ${minRaise}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Update action buttons based on available actions
+   */
+  updateActionButtons(currentPlayerId, gameStats) {
+    // Disable all buttons by default
+    this.elements.foldBtn.disabled = true;
+    this.elements.checkBtn.disabled = true;
+    this.elements.callBtn.disabled = true;
+    this.elements.raiseBtn.disabled = true;
+    
+    // Hide raise controls
+    this.elements.raiseControls.style.display = 'none';
+    
+    // If no current player or game not active, keep buttons disabled
+    if (!currentPlayerId || !gameStats.isGameActive) {
+      return;
+    }
+    
+    // Get available actions from game controller
+    const actionsResult = this.gameController.getPlayerActions(currentPlayerId);
+    if (!actionsResult.success || !actionsResult.actions) {
+      return;
+    }
+    
+    const availableActions = actionsResult.actions;
+    
+    // Enable buttons based on available actions
+    if (availableActions.includes('fold')) {
+      this.elements.foldBtn.disabled = false;
+    }
+    if (availableActions.includes('check')) {
+      this.elements.checkBtn.disabled = false;
+    }
+    if (availableActions.includes('call')) {
+      this.elements.callBtn.disabled = false;
+      // Update call button text with amount if available
+      const callAmount = actionsResult.callAmount || 0;
+      this.elements.callBtn.textContent = callAmount > 0 ? `Call ${callAmount}` : 'Call';
+    }
+    if (availableActions.includes('raise')) {
+      this.elements.raiseBtn.disabled = false;
+    }
+  }
+
+  /**
+   * Handle player action (fold, check, call)
+   */
+  handlePlayerAction(action) {
+    // Clear any existing errors
+    this.clearError();
+    
+    const gameState = this.gameController.getGameState();
+    const currentPlayerId = gameState.betting ? gameState.betting.currentPlayer : null;
+    
+    if (!currentPlayerId) {
+      this.showError('No current player to perform action');
+      return;
+    }
+    
+    // Perform action through game controller
+    const result = this.gameController.playerAction({
+      playerId: currentPlayerId,
+      action: action
+    });
+    
+    if (result.success) {
+      // Update UI to reflect action taken
+      this.updateGameStateDisplay();
+    } else {
+      // Display error from poker engine
+      const errorMessage = result.error ? result.error.message : `Failed to perform ${action} action`;
+      this.showError(errorMessage);
+    }
+  }
+
+  /**
+   * Handle raise button click - show raise controls
+   */
+  handleRaiseClick() {
+    // Clear any existing errors
+    this.clearError();
+    
+    const gameState = this.gameController.getGameState();
+    const currentPlayerId = gameState.betting ? gameState.betting.currentPlayer : null;
+    
+    if (!currentPlayerId) {
+      this.showError('No current player to perform raise');
+      return;
+    }
+    
+    // Get available actions to get min raise amount
+    const actionsResult = this.gameController.getPlayerActions(currentPlayerId);
+    if (!actionsResult.success) {
+      this.showError('Unable to get raise information');
+      return;
+    }
+    
+    const minRaise = actionsResult.minRaise || 0;
+    const maxRaise = actionsResult.maxRaise || 1000;
+    
+    // Set up raise input
+    this.elements.raiseAmount.min = minRaise;
+    this.elements.raiseAmount.max = maxRaise;
+    this.elements.raiseAmount.value = minRaise;
+    this.elements.raiseAmount.placeholder = `Min: ${minRaise}, Max: ${maxRaise}`;
+    
+    // Show raise controls
+    this.elements.raiseControls.style.display = 'block';
+    this.elements.raiseAmount.focus();
+  }
+
+  /**
+   * Handle confirm raise action
+   */
+  handleConfirmRaise() {
+    // Clear any existing errors
+    this.clearError();
+    
+    const gameState = this.gameController.getGameState();
+    const currentPlayerId = gameState.betting ? gameState.betting.currentPlayer : null;
+    
+    if (!currentPlayerId) {
+      this.showError('No current player to perform raise');
+      return;
+    }
+    
+    const raiseAmount = parseInt(this.elements.raiseAmount.value);
+    
+    // Basic validation
+    if (isNaN(raiseAmount) || raiseAmount <= 0) {
+      this.showError('Please enter a valid raise amount');
+      return;
+    }
+    
+    // Perform raise action through game controller
+    const result = this.gameController.playerAction({
+      playerId: currentPlayerId,
+      action: 'raise',
+      amount: raiseAmount
+    });
+    
+    if (result.success) {
+      // Hide raise controls and update UI
+      this.elements.raiseControls.style.display = 'none';
+      this.updateGameStateDisplay();
+    } else {
+      // Display error from poker engine
+      const errorMessage = result.error ? result.error.message : 'Failed to perform raise action';
+      this.showError(errorMessage);
+    }
+  }
+
+  /**
+   * Handle cancel raise action
+   */
+  handleCancelRaise() {
+    // Hide raise controls without performing action
+    this.elements.raiseControls.style.display = 'none';
+    this.elements.raiseAmount.value = '';
   }
 
   /**
